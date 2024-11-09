@@ -6,9 +6,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "myassert.h"
-#include "orchestre_service.h"
-#include "client_service.h"
+#include "../UTILS/myassert.h"
+#include "../ORCHESTRE_SERVICE/orchestre_service.h"
+#include "../CLIENT_SERVICE/client_service.h"
 
 #include "service_somme.h"
 
