@@ -17,6 +17,10 @@
 // fonction de réception des données
 static void receiveData(/* fd_pipe_from_client, */ /* données à récupérer */)
 {
+    //de Leïla : sont envoyés par le client dans cet ordre : 
+    //- le nombre de threads à utiliser
+    //- la taille de tableau de float
+    //- le tableau de float
 }
 
 // fonction de traitement des données

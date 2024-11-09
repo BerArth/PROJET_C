@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h> 
 
 #include "client_service.h"
 #include "client_sigma.h"
-
+#include "myassert.h"
+#include "io.h"
 
 /*----------------------------------------------*
  * usage pour le client sigma
@@ -47,9 +49,29 @@ void client_sigma_verifArgs(int argc, char * argv[])
 // - le file descriptor du tube de communication vers le service
 // - le nombre de threads que doit utiliser le service
 // - le tableau de float dont on veut la somme
-static void sendData(/* fd_pipe_to_service,*/ /* nbre_threads, */ /* tableau_de_float_à_envoyer */)
+static void sendData(const int pts, const int num_thr, const float to_sum[], const int tab_size)
 {
-    // envoi du nombre de threads et du tableau de float
+    // envoi du nombre de threads
+    int ret = write(pts, &num_thr, sizeof(int));
+
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal écrites");
+
+    //Envoi de la taille du tableau de float
+    ret = write(pts, &tab_size, sizeof(int));
+
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal écrites");
+
+    //Envoi du tableau de float
+    for(int i = 0; i < tab_size; i++)
+    {
+        ret = write(pts, &(to_sum[i]), sizeof(float));
+
+        myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+        myassert(ret == sizeof(float), "Erreur : Données mal écrites");
+    }
+
 }
 
 // ---------------------------------------------
@@ -57,10 +79,18 @@ static void sendData(/* fd_pipe_to_service,*/ /* nbre_threads, */ /* tableau_de_
 // Les paramètres sont
 // - le file descriptor du tube de communication en provenance du service
 // - autre chose si nécessaire
-static void receiveResult(/* fd_pipe_from_service,*/ /* autres paramètres si nécessaire */)
+static void receiveResult(int pfs/* autres paramètres si nécessaire */)
 {
     // récupération du résultat
+    float res; 
+
+    int ret = read(pfs, &res, sizeof(float));
+
+    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+    myassert(ret == sizeof(float), "Erreur : Données mal lues");
+
     // affichage du résultat
+    printf("Le résultat est : %f\n", res);
 }
 
 
@@ -72,10 +102,22 @@ static void receiveResult(/* fd_pipe_from_service,*/ /* autres paramètres si n�
 // Cette fonction analyse argv et en déduit les données à envoyer
 //    - argv[2] : nombre de threads
 //    - argv[3] à argv[argc-1]: les nombres flottants
-void client_sigma(/* fd des tubes avec le service, */ int argc, char * argv[])
+void client_sigma(int pts, int pfs, int argc, char * argv[])
 {
+    //Pour ne pas avoir de warning sur l'inutilisation de argc
+    myassert(argc >= 5, "Nombre de paramètres invalide");
+
     // variables locales éventuelles
-    sendData(/* paramètres */);
-    receiveResult(/* paramètres */);
+    int tab_size = argc - 3; //car trois premières cases de argv sont d'autres arguments
+
+    //Création du tableau de float
+    float to_sum[tab_size];
+    for(int i = 0; i < tab_size; i++)
+    {
+        to_sum[i] = io_strToInt(argv[i + 3]);
+    }
+
+    sendData(pts, io_strToInt(argv[2]), to_sum, tab_size);
+    receiveResult(pfs);
 }
 

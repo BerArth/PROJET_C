@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "client_service.h"
 #include "client_somme.h"
+#include "myassert.h"
+#include "io.h"
 
 
 /*----------------------------------------------*
@@ -46,9 +50,18 @@ void client_somme_verifArgs(int argc, char * argv[])
 // Les paramètres sont
 // - le file descriptor du tube de communication vers le service
 // - les deux float dont on veut la somme
-static void sendData(/* fd_pipe_to_service,*/ /* entier1, */ /* entier2 */)
+static void sendData(int pts, const float fst, const float scd)
 {
     // envoi des deux nombres
+    int ret = write(pts, &fst, sizeof(float));
+
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(float), "Erreur : Données mal écrites");
+
+    ret = write(pts, &scd, sizeof(float));
+
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(float), "Erreur : Données mal écrites");
 }
 
 // ---------------------------------------------
@@ -57,10 +70,18 @@ static void sendData(/* fd_pipe_to_service,*/ /* entier1, */ /* entier2 */)
 // - le file descriptor du tube de communication en provenance du service
 // - le prefixe
 // - autre chose si nécessaire
-static void receiveResult(/* fd_pipe_from_service,*/ /* préfixe, */ /* autres paramètres si nécessaire */)
+static void receiveResult(int pfs, const char* prefixe /* autres paramètres si nécessaire */)
 {
     // récupération de la somme
+    float res;
+
+    int ret = read(pfs, &res, sizeof(float));
+
+    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+    myassert(ret == sizeof(float), "Erreur : Données mal lues");
+
     // affichage du préfixe et du résultat
+    printf("%s %f\n", prefixe, res);
 }
 
 
@@ -73,10 +94,14 @@ static void receiveResult(/* fd_pipe_from_service,*/ /* préfixe, */ /* autres p
 //    - argv[2] : premier nombre
 //    - argv[3] : deuxième nombre
 //    - argv[4] : chaîne à afficher avant le résultat
-void client_somme(/* fd des tubes avec le service, */ int argc, char * argv[])
+void client_somme(int pts, int pfs, int argc, char * argv[])
 {
+    //Pour ne pas avoir de warning sur l'inutilisation de argc
+    myassert(argc == 5, "Nombre de paramètres invalide");
+
     // variables locales éventuelles
-    sendData(/* paramètres */);
-    receiveResult(/* paramètres */);
+
+    sendData(pts, io_strToFloat(argv[2]), io_strToFloat(argv[3]));
+    receiveResult(pfs, argv[4]);
 }
 

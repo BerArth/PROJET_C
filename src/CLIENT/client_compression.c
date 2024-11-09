@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "client_service.h"
 #include "client_compression.h"
+#include "myassert.h"
 
 
 /*----------------------------------------------*
@@ -45,9 +48,22 @@ void client_compression_verifArgs(int argc, char * argv[])
 // Les paramètres sont
 // - le file descriptor du tube de communication vers le service
 // - la chaîne devant être compressée
-static void sendData(/* fd_pipe_to_service,*/ /* chaine_à_envoyer */)
+static void sendData(int pts, const char* message)
 {
+    //mémorisation de la taille de la chaîne à envoyer
+    int len = strlen(message);
+
+    //envoi de la longueur de la chaîne à compresser
+    int ret = write(pts, &len, sizeof(int));
+
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal écrites");
+
     // envoi de la chaîne à compresser
+    ret = write(pts, message, sizeof(char) * len);
+
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == (int)(sizeof(char) * len), "Erreur : Données mal écrites");
 }
 
 // ---------------------------------------------
@@ -55,10 +71,26 @@ static void sendData(/* fd_pipe_to_service,*/ /* chaine_à_envoyer */)
 // Les paramètres sont
 // - le file descriptor du tube de communication en provenance du service
 // - autre chose si nécessaire
-static void receiveResult(/* fd_pipe_from_service,*/ /* autres paramètres si nécessaire */)
+static void receiveResult(int pfs /* autres paramètres si nécessaire */)
 {
+    //récupération de la longueur de la chaîne compressée
+    int len = 0;
+
+    int ret = read(pfs, &len, sizeof(int));
+
+    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal lues");
+
     // récupération de la chaîne compressée
+    char* res = (char*)malloc(sizeof(char) * len);
+
+    ret = read(pfs, res, sizeof(char) * len);
+
+    myassert(ret != -1, "Erreur : Echec de la lecture dans le  tube");
+    myassert(ret == (int)(sizeof(char) * len), "Erreur : Données mal lues");
+    
     // affichage du résultat
+    printf("La chaîne compressée est : %s\n", res);
 }
 
 // ---------------------------------------------
@@ -68,10 +100,14 @@ static void receiveResult(/* fd_pipe_from_service,*/ /* autres paramètres si n�
 // - argc et argv fournis en ligne de commande
 // Cette fonction analyse argv et en déduit les données à envoyer
 //    - argv[2] : la chaîne à compresser
-void client_compression(/* fd des tubes avec le service, */ int argc, char * argv[])
+void client_compression(int pts, int pfs, int argc, char * argv[])
 {
+    //Pour ne pas avoir de warning sur l'inutilisation de argc
+    myassert(argc == 3, "Nombre de paramètres invalide");
+
     // variables locales éventuelles
-    sendData(/* paramètres */);
-    receiveResult(/* paramètres */);
+
+    sendData(pts, argv[2]);
+    receiveResult(pfs);
 }
 
