@@ -7,6 +7,7 @@
 #include "client_service.h"
 #include "client_compression.h"
 #include "myassert.h"
+#include <memory.h>
 
 
 /*----------------------------------------------*
@@ -82,7 +83,8 @@ static void receiveResult(int pfs /* autres paramètres si nécessaire */)
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
 
     // récupération de la chaîne compressée
-    char* res = (char*)malloc(sizeof(char) * len);
+    char* res;
+    MY_MALLOC(res, char, len);
 
     ret = read(pfs, res, sizeof(char) * len);
 
@@ -91,6 +93,8 @@ static void receiveResult(int pfs /* autres paramètres si nécessaire */)
     
     // affichage du résultat
     printf("La chaîne compressée est : %s\n", res);
+
+    MY_FREE(res);
 }
 
 // ---------------------------------------------

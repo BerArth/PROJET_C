@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "io.h"
 #include "memory.h"
@@ -27,6 +33,40 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
+//Fonction permettant de récupérer le sémaphore créé par l'orchestre
+static int my_semget()
+{
+    key_t key;
+    int sem_id;
+
+    //Création de la clé
+    key = ftok(FICHIER_CO, ID_CO);
+    myassert(key != -1, "Erreur : Echec de la création de la clé IPC");
+
+    //Récupération du sémaphore
+    semId = semget(key, 1, 0);
+    myassert(semId != -1, "Erreur : Echec de la récupération du sémaphore");
+
+    return semId;
+}
+
+//Fonction permettant de rentrer en section critique
+static void entrer_sc(int semId)
+{
+    struct sembuf operationMoins = {0, -1, 0};
+
+    int ret = semop(semId, &operationMoins, 1);
+    myassert(ret != -1, "Erreur : Echec de l'opération pour entrer en section critique");
+}
+
+static void sortir_sc(int semId)
+{
+    struct sembuf operationPlus = {0, 1, 0};
+
+    int ret = semop(semId, &operationPlus, 1);
+    myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
+}
+
 int main(int argc, char * argv[])
 {
     if (argc < 2)
@@ -42,23 +82,77 @@ int main(int argc, char * argv[])
     //         ou . client_somme_verifArgs
     //         ou . client_compression_verifArgs
     //         ou . client_sigma_verifArgs
+    if(numService == SERVICE_ARRET)
+    {
+        client_arret_verifArgs(argc, argv);
+    }
+    else if(numService == SERVICE_SOMME)
+    {
+        client_somme_verifArgs(argc, argv);
+    }
+    else if(numService == SERVICE_COMPRESSION)
+    {
+        client_compression_verifArgs(argc, argv);
+    }
+    else if(numService == SERVICE_SIGMA)
+    {
+        client_sigma_verifArgs(argc, argv);
+    }
+
     // initialisations diverses s'il y a lieu
+    int ret, code_ret;
+    
+    //Variable pour (eventuellement) récuperer le mot de passe
+    int password = 0;
+
+    //Récupération du sémaphore
+    int semId = my_semget();
+
+    //Descripteurs des tubes orchestre->client et client->orcherstre
+    int fd_otc, fd_cto;
+
 
     // entrée en section critique pour communiquer avec l'orchestre
+    entrer_sc(semId);
     
     // ouverture des tubes avec l'orchestre
+    fd_otc = open(PIPE_OTC, O_RDONLY);
+    myassert(fd_otc != -1, "Erreur : Echec de l'ouverture du tube");
+
+    fd_cto = open(PIPE_CTO, O_WRONLY);
+    myassert(fd_cto != -1, "Erreur : Echec de l'ouverture du tube");
 
     // envoi à l'orchestre du numéro du service
+    ret = write(fd_cto, &numService, sizeof(int));
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal écrites");
 
     // attente code de retour
-    // si code d'erreur
+    ret = read(fd_otc, &code_ret, sizeof(int));
+    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal lues");
+
+    // si code d'erreur (service déjà en cours d'utilisation ou fermé)
     //     afficher un message erreur
+    if(code_ret == -2)
+    {
+        printf("Service indisponible pour le moment.\n");
+    }
     // sinon si demande d'arrêt (i.e. numService == -1)
     //     afficher un message
+    else if(code_ret == -1)
+    {
+        printf("Arrêt demandé.\n");
+    }
     // sinon
-    //     récupération du mot de passe et des noms des 2 tubes
+    //     récupération du code d'acceptation puis du mot de passe et des noms des 2 tubes
+    else
+    {
+        ret = read(fd_otc, &password, sizeof(int));
+    }
     // finsi
-    //
+    
+
     // envoi d'un accusé de réception à l'orchestre
     // fermeture des tubes avec l'orchestre
     // on prévient l'orchestre qu'on a fini la communication (cf. orchestre.c)

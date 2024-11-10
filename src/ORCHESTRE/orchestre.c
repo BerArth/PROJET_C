@@ -53,7 +53,7 @@ int main(int argc, char * argv[])
         //     envoi au client d'un code d'acceptation (via le tube nommé)
         //     marquer le booléen de fin de la boucle
         // sinon si service non ouvert
-        //     envoi au client d'un code d'erreur (via le tube nommé)
+        //     envoi au client d'un code d'erreur (via le tube nommé) //définir constantes pr cela ?
         // sinon si service déjà en cours de traitement
         //     envoi au client d'un code d'erreur (via le tube nommé)
         // sinon
