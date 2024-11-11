@@ -37,7 +37,7 @@ int main(int argc, char * argv[])
     // - un sémaphore pour que le service préviene l'orchestre de la
     //   fin d'un traitement
     // - création de deux tubes nommés (pour chaque service) pour les
-    //   communications entre les clients et les services
+    //   communications entre les clients et les services //voir client_service.h pr les constantes correspondantes aux tubes
 
     while (! fin)
     {
@@ -50,19 +50,20 @@ int main(int argc, char * argv[])
 
         // analyse de la demande du client
         // si ordre de fin
-        //     envoi au client d'un code d'acceptation (via le tube nommé)
+        //     envoi au client d'un code d'acceptation (via le tube nommé) //dans client.c j'ai mis -1 comme code d'acceptation
         //     marquer le booléen de fin de la boucle
         // sinon si service non ouvert
-        //     envoi au client d'un code d'erreur (via le tube nommé) //définir constantes pr cela ?
+        //     envoi au client d'un code d'erreur (via le tube nommé) //ds client.c j'ai mis que le code de retour si le service est indisponible (non ouvert ou déjà utilisé) est -2
         // sinon si service déjà en cours de traitement
-        //     envoi au client d'un code d'erreur (via le tube nommé)
+        //     envoi au client d'un code d'erreur (via le tube nommé) //-2 aussi dcp (tu peux définir autre chose tqt juste faudra que tu me dises que je change ds client.c)
         // sinon
         //     envoi au client d'un code d'acceptation (via le tube nommé)
         //     génération d'un mot de passe
         //     envoi d'un code de travail au service (via le tube anonyme)
         //     envoi du mot de passe au service (via le tube anonyme)
         //     envoi du mot de passe au client (via le tube nommé)
-        //     envoi des noms des tubes nommés au client (via le tube nommé)
+        //     envoi des noms des tubes nommés au client (via le tube nommé) //voir client_service.h, je pense que dcp les noms à envoyer seraient les constantes correspondantes aux tubes
+                                                                            //dcp envoyer la taille de la chaîne de caractères avant 
         // finsi
 
         // attente d'un accusé de réception du client
