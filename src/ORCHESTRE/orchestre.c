@@ -37,7 +37,7 @@ int main(int argc, char * argv[])
     // - un sémaphore pour que le service préviene l'orchestre de la
     //   fin d'un traitement
     // - création de deux tubes nommés (pour chaque service) pour les
-    //   communications entre les clients et les services
+    //   communications entre les clients et les services //voir client_service.h pr les constantes correspondantes aux tubes
 
     while (! fin)
     {
@@ -62,7 +62,8 @@ int main(int argc, char * argv[])
         //     envoi d'un code de travail au service (via le tube anonyme)
         //     envoi du mot de passe au service (via le tube anonyme)
         //     envoi du mot de passe au client (via le tube nommé)
-        //     envoi des noms des tubes nommés au client (via le tube nommé)
+        //     envoi des noms des tubes nommés au client (via le tube nommé) //voir client_service.h, je pense que dcp les noms à envoyer seraient les constantes correspondantes aux tubes
+                                                                            //dcp envoyer la taille de la chaîne de caractères avant 
         // finsi
 
         // attente d'un accusé de réception du client

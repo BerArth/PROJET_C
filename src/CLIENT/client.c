@@ -67,6 +67,15 @@ static void sortir_sc(int semId)
     myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
 }
 
+static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
+{
+    *fd_rd = open(pipe_rd, O_RDONLY);
+    myassert(*fd_rd != -1, "Erreur : Echec de l'ouverture du tube");
+
+    *fd_wr = open(pipe_wr, O_WRONLY);
+    myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
+}
+
 int main(int argc, char * argv[])
 {
     if (argc < 2)
@@ -111,16 +120,16 @@ int main(int argc, char * argv[])
     //Descripteurs des tubes orchestre->client et client->orcherstre
     int fd_otc, fd_cto;
 
+    //Variables pr les noms des tubes service <-> client + leurs tailles (peut être non utilisées si service indisponible)
+    int len = 0;
+
+    char* pipe_stc, pipe_cts;
 
     // entrée en section critique pour communiquer avec l'orchestre
     entrer_sc(semId);
     
     // ouverture des tubes avec l'orchestre
-    fd_otc = open(PIPE_OTC, O_RDONLY);
-    myassert(fd_otc != -1, "Erreur : Echec de l'ouverture du tube");
-
-    fd_cto = open(PIPE_CTO, O_WRONLY);
-    myassert(fd_cto != -1, "Erreur : Echec de l'ouverture du tube");
+    open_pipes(); 
 
     // envoi à l'orchestre du numéro du service
     ret = write(fd_cto, &numService, sizeof(int));
@@ -145,10 +154,18 @@ int main(int argc, char * argv[])
         printf("Arrêt demandé.\n");
     }
     // sinon
-    //     récupération du code d'acceptation puis du mot de passe et des noms des 2 tubes
+    //     récupération du code d'acceptation (= celui contenu dans code_ret) puis du mot de passe et des noms des 2 tubes
     else
     {
         ret = read(fd_otc, &password, sizeof(int));
+        myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+        myassert(ret == sizeof(int), "Erreur : Données mal lues");
+        
+        ret = read(fd_otc, &len, sizeof(int));
+        myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+        myassert(ret == sizeof(int), "Erreur : Données mal lues");
+
+
     }
     // finsi
     
