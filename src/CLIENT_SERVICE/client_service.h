@@ -4,9 +4,6 @@
 // Ici toutes les communications entre les services et les clients :
 // - les deux tubes nommés pour la communication bidirectionnelle
 
-#define PIPE_SATC "pipe_s2c_-1" //tube service arrêt -> client
-#define PIPE_CTSA "pipe_c2s_-1" //tube client -> service arrêt
-
 #define PIPE_SSOTC "pipe_s2c_0" //tube service somme -> client
 #define PIPE_CTSSO "pipe_c2s_0" //tube client -> service somme
 

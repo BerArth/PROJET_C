@@ -59,6 +59,7 @@ static void entrer_sc(int semId)
     myassert(ret != -1, "Erreur : Echec de l'opération pour entrer en section critique");
 }
 
+//Fonction permettant de sortir de la section critique
 static void sortir_sc(int semId)
 {
     struct sembuf operationPlus = {0, 1, 0};
@@ -67,6 +68,7 @@ static void sortir_sc(int semId)
     myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
 }
 
+//Fonction permettant d'ouvrir 2 tubes pour une communication bidirectionnelle
 static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
 {
     *fd_rd = open(pipe_rd, O_RDONLY);
@@ -74,6 +76,23 @@ static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
 
     *fd_wr = open(pipe_wr, O_WRONLY);
     myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
+}
+
+//Fonction permettant de fermer 2 tubes
+static void close_pipes(int fd_rd, int fd_wr)
+{
+    int ret = close(fd_rd);
+    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
+
+    ret = close(fd_wr);
+    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
+}
+
+//Fonction permettant de lire une chaîne de caractère dans un tube
+//Retourne la chaîne de caractère lue
+static char* read_str(int fd)
+{
+    
 }
 
 int main(int argc, char * argv[])
@@ -122,14 +141,16 @@ int main(int argc, char * argv[])
 
     //Variables pr les noms des tubes service <-> client + leurs tailles (peut être non utilisées si service indisponible)
     int len = 0;
+    char* pipe_stc = (char*)malloc(sizeof(char)); //Allocation de la taille d'un caractère pr pouvoir faire systématiquement un free
+    char* pipe_cts = (char*)malloc(sizeof(char)); //Allocation de la taille d'un caractère pr pouvoir faire systématiquement un free
 
-    char* pipe_stc, pipe_cts;
+    //Variables 
 
     // entrée en section critique pour communiquer avec l'orchestre
     entrer_sc(semId);
     
     // ouverture des tubes avec l'orchestre
-    open_pipes(); 
+    open_pipes(&fd_otc, &fd_cto, PIPE_OTC, PIPE_CTO); 
 
     // envoi à l'orchestre du numéro du service
     ret = write(fd_cto, &numService, sizeof(int));
@@ -172,6 +193,7 @@ int main(int argc, char * argv[])
 
     // envoi d'un accusé de réception à l'orchestre
     // fermeture des tubes avec l'orchestre
+    close_pipes(fd_otc, fd_cto);
     // on prévient l'orchestre qu'on a fini la communication (cf. orchestre.c)
     // sortie de la section critique
     //
@@ -193,6 +215,8 @@ int main(int argc, char * argv[])
     // finsi
 
     // libération éventuelle de ressources
+    free(pipe_cts);
+    free(pipe_stc);
     
     return EXIT_SUCCESS;
 }
