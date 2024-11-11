@@ -45,9 +45,9 @@ int main(int argc, char * argv[])
         //    ouverture des deux tubes nommés avec le client
         //    attente du mot de passe du client
         //    si mot de passe incorrect
-        //        envoi au client d'un code d'erreur
+        //        envoi au client d'un code d'erreur // = 1 pr l'instant (tu peux changer stv mais faudra me prévenir que je change ds client)
         //    sinon
-        //        envoi au client d'un code d'acceptation
+        //        envoi au client d'un code d'acceptation // ce que tu veux sauf code d'erreur lol
         //        appel de la fonction de communication avec le client :
         //            une fct par service selon numService (cf. argv[1]) :
         //                   . service_somme

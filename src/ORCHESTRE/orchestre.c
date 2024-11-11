@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
     
     // lancement des services, avec pour chaque service :
     // - création d'un tube anonyme pour converser (orchestre vers service)
-    // - un sémaphore pour que le service préviene l'orchestre de la
+    // - un sémaphore pour que le service prévienne l'orchestre de la
     //   fin d'un traitement
     // - création de deux tubes nommés (pour chaque service) pour les
     //   communications entre les clients et les services //voir client_service.h pr les constantes correspondantes aux tubes
@@ -63,7 +63,8 @@ int main(int argc, char * argv[])
         //     envoi du mot de passe au service (via le tube anonyme)
         //     envoi du mot de passe au client (via le tube nommé)
         //     envoi des noms des tubes nommés au client (via le tube nommé) //voir client_service.h, je pense que dcp les noms à envoyer seraient les constantes correspondantes aux tubes
-                                                                            //dcp envoyer la taille de la chaîne de caractères avant 
+                                                                            //dcp envoyer la taille de la chaîne de caractères avant
+                                                                            //tube client -> service puis tube service -> client stp
         // finsi
 
         // attente d'un accusé de réception du client
