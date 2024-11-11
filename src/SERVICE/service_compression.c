@@ -10,6 +10,7 @@
 #include "../UTILS/myassert.h"
 #include "orchestre_service.h"
 #include "client_service.h"
+#include "../UTILS/memory.h"
 
 #include "service_compression.h"
 
@@ -26,13 +27,13 @@ static void receiveData(int pfc, int * len, char ** s)
     //de Leïla : la longueur de la chaîne de caractère est envoyée en premier (c'est toujours le cas)
     int ret = read(pfc, len, sizeof(int));
     myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
-    myassert(ret == sizeof(float) ,"Erreur : Données mal lues");
+    myassert(ret == sizeof(int) ,"Erreur : Données mal lues");
 
-    *s = malloc(*len * sizeof(char));
+    MY_MALLOC(*s, char, *len);
 
     ret = read(pfc, *s, *len * sizeof(char));
     myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
-    myassert(ret == sizeof(float) ,"Erreur : Données mal lues");
+    myassert(ret == (int)(sizeof(char) * (*len)),"Erreur : Données mal lues");
 
 }
 
@@ -44,7 +45,7 @@ static void computeResult(char * input, char ** result)
     char temp[20];
     int output_size = 1; 
 
-    *result = (char*)malloc(output_size);
+    MY_MALLOC(*result, char, output_size);
 
     (*result)[0] = '\0';
 
@@ -64,7 +65,7 @@ static void computeResult(char * input, char ** result)
         int temp_length = strlen(temp);
         output_size += temp_length;
 
-        *result = (char*)realloc(*result, output_size);
+        MY_REALLOC(*result, *result, char, output_size);
 
         strcat(*result, temp);
     }
@@ -76,11 +77,11 @@ static void sendResult(int ptc, int len, const char * result)
 {
     
     int ret = write(ptc, &len, sizeof(int));
-    myassert(ret != -1 ,"Erreur : Echec de l'écriture dans le tube.");
-    myassert(ret == sizeof(float) ,"Erreur : Données mal écrites");
+    myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
+    myassert(ret == sizeof(int) ,"Erreur : Données mal lues");
     ret = write(ptc, result, sizeof(char) * len);
-    myassert(ret != -1 ,"Erreur : Echec de l'écriture dans le tube.");
-    myassert(ret == sizeof(float) ,"Erreur : Données mal écrites");
+    myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
+    myassert(ret == (int)(sizeof(char) * len),"Erreur : Données mal lues");
 
 }
 
@@ -88,16 +89,9 @@ static void sendResult(int ptc, int len, const char * result)
 /*----------------------------------------------*
  * fonction appelable par le main
  *----------------------------------------------*/
-void service_compression(const char * pipe_to_client, const char * pipe_from_client)
+void service_compression(int pfc, int ptc)
 {
     // initialisations diverses
-
-    int pfc = open(pipe_from_client, O_RDONLY);
-    myassert(pfc != -1, "Erreur : Echec de l'ouveture du tube pipe_from_client");
-
-    int ptc = open(pipe_to_client, O_WRONLY);
-    myassert(ptc != -1, "Erreur : Echec de l'ouveture du tube pipe_to_client");
-
     char * s = NULL;
     int len = 0;
     char * result = NULL;
