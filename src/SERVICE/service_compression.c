@@ -77,11 +77,11 @@ static void sendResult(int ptc, int len, const char * result)
 {
     
     int ret = write(ptc, &len, sizeof(int));
-    myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
-    myassert(ret == sizeof(int) ,"Erreur : Données mal lues");
+    myassert(ret != -1 ,"Erreur : Echec de l'écriture dans le tube.");
+    myassert(ret == sizeof(int) ,"Erreur : Données mal ecrites");
     ret = write(ptc, result, sizeof(char) * len);
-    myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
-    myassert(ret == (int)(sizeof(char) * len),"Erreur : Données mal lues");
+    myassert(ret != -1 ,"Erreur : Echec de l'écriture dans le tube.");
+    myassert(ret == (int)(sizeof(char) * len),"Erreur : Données mal ecrites");
 
 }
 
@@ -102,4 +102,6 @@ void service_compression(int pfc, int ptc)
     sendResult(ptc, len_result, result);
 
     // libération éventuelle de ressources
+
+    free(result);
 }
