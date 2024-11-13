@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
-#include <sys/wait.h>
 
-#include "orchestre_service.h"
+
+#include "../ORCHESTRE_SERVICE/orchestre_service.h"
 #include "client_service.h"
 #include "service.h"
 #include "service_somme.h"
@@ -28,6 +33,38 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
+static int my_semget()
+{
+    key_t key;
+    int semId;
+
+    //Création de la clé
+    key = ftok(FICHIER_SO, ID_SO);
+    myassert(key != -1, "Erreur : Echec de la création de la clé IPC");
+
+    //Récupération du sémaphore
+    semId = semget(key, 1, 0);
+    myassert(semId != -1, "Erreur : Echec de la récupération du sémaphore");
+
+    return semId;
+}
+
+static void entrer_sc(int semId)
+{
+    struct sembuf operationMoins = {0, -1, 0};
+
+    int ret = semop(semId, &operationMoins, 1);
+    myassert(ret != -1, "Erreur : Echec de l'opération pour entrer en section critique");
+}
+
+//Fonction permettant de sortir de la section critique
+static void sortir_sc(int semId)
+{
+    struct sembuf operationPlus = {0, 1, 0};
+
+    int ret = semop(semId, &operationPlus, 1);
+    myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
+}
 
 static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
 {
@@ -36,6 +73,33 @@ static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
 
     *fd_wr = open(pipe_wr, O_WRONLY);
     myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
+}
+
+static int read_int(int fd)
+{
+    int res;
+
+    int ret = read(fd, &res, sizeof(int));
+    myassert(ret != -1, "Echec de la lecture dans le tube anonyme");
+    myassert(ret == sizeof(int), "Erreur, données mal lues");
+    
+    return res;
+}
+
+static void write_int(int fd, const int msg)
+{
+    int ret = write(fd, &msg, sizeof(int));
+    myassert(ret != -1, "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == sizeof(int), "Erreur : Données mal écrites");
+}
+
+static void close_pipes(int fd_rd, int fd_wr)
+{
+    int ret = close(fd_rd);
+    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
+
+    ret = close(fd_wr);
+    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
 }
 
 /*----------------------------------------------*
@@ -51,20 +115,16 @@ int main(int argc, char * argv[])
     int numService = io_strToInt(argv[1]);
     int fd = io_strToInt(argv[2]);
 
-    int ret, ret_code_orchestre, mdp_orc, mdp_cli;
+    int ret_code_orchestre, mdp_orc, mdp_cli;
     
     int fd_stc, fd_cts;
 
-    char * pipe_stc;
-    char * pipe_cts;
-
+    int sem_id = my_semget();
 
     while (true)
     {
         // attente d'un code de l'orchestre (via tube anonyme)
-        ret = read(fd, &ret_code_orchestre, sizeof(int));
-        myassert(ret != -1, "Echec de la lecture dans le tube anonyme");
-        myassert(ret == sizeof(int));
+        ret_code_orchestre = read_int(fd);
         // si code de fin
         if(ret_code_orchestre == -1)
         {
@@ -73,40 +133,65 @@ int main(int argc, char * argv[])
         }
         else
         {
+
+            entrer_sc(sem_id);
+
             // sinon
             //    réception du mot de passe de l'orchestre
-            ret = read(fd, &mdp, sizeof(int));
+            
+            mdp_orc = read_int(fd);
+
             //    ouverture des deux tubes nommés avec le client
-            if(numService == 0){
+            if(numService == SERVICE_SOMME){
                 open_pipes(&fd_cts, &fd_stc, PIPE_SSOTC, PIPE_CTSSO);
             }
-            else if 
+            else if(numService == SERVICE_COMPRESSION)
             {
                 open_pipes(&fd_cts, &fd_stc, PIPE_SCTC, PIPE_CTSC);
             }
-            else if 
+            else if(numService == SERVICE_SIGMA)
             {
                 open_pipes(&fd_cts, &fd_stc, PIPE_SSITC, PIPE_CTSSI);
             }
             //    attente du mot de passe du client
-            ret = read(fd_cts, &mdp_cli, sizeof(int));
-            myassert(ret != -1,);
+            mdp_cli = read_int(fd_cts);
             //    si mot de passe incorrect
             if(mdp_cli != mdp_orc){
             //        envoi au client d'un code d'erreur // = 1 pr l'instant (tu peux changer stv mais faudra me prévenir que je change ds client)
-
+                int code_err = 1;
+                write_int(fd_stc, code_err);
             }
-            //    sinon
-            //        envoi au client d'un code d'acceptation // ce que tu veux sauf code d'erreur lol
-            //        appel de la fonction de communication avec le client :
-            //            une fct par service selon numService (cf. argv[1]) :
-            //                   . service_somme
-            //                ou . service_compression
-            //                ou . service_sigma
-            //        attente de l'accusé de réception du client
-            //    finsi
+            else //    sinon
+            {
+                //        envoi au client d'un code d'acceptation // ce que tu veux sauf code d'erreur lol
+                //        appel de la fonction de communication avec le client :
+                //            une fct par service selon numService (cf. argv[1]) :
+                //                   . service_somme
+                //                ou . service_compression
+                //                ou . service_sigma
+                //        attente de l'accusé de réception du client
+                int code_acc = 0;
+                write_int(fd_stc, code_acc);
+
+                if(numService == SERVICE_SOMME){
+                    service_somme(fd_stc, fd_cts);
+                }
+                else if(numService == SERVICE_COMPRESSION)
+                {
+                    service_compression(fd_stc, fd_cts);
+                }
+                else if(numService == SERVICE_SIGMA)
+                {
+                    service_sigma(fd_stc, fd_cts);
+                }
+
+            } //    finsi
             //    fermeture ici des deux tubes nommés avec le client
+            close_pipes(fd_cts, fd_stc);
             //    modification du sémaphore pour prévenir l'orchestre de la fin
+
+            sortir_sc(sem_id);
+            
             // finsi
         }
     }

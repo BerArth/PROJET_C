@@ -56,15 +56,9 @@ static void sendResult(int ptc, const float result)
 /*----------------------------------------------*
  * fonction appelable par le main
  *----------------------------------------------*/
-void service_somme(const char * pipe_to_client, const char * pipe_from_client)
+void service_somme(int ptc, int pfc)
 {
     // initialisations diverses
-    
-    int pfc = open(pipe_from_client, O_RDONLY);
-    myassert(pfc != -1, "Erreur : Echec de l'ouveture du tube pipe_from_client");
-
-    int ptc = open(pipe_to_client, O_WRONLY);
-    myassert(ptc != -1, "Erreur : Echec de l'ouveture du tube pipe_to_client");
 
     float a,b,result;
 

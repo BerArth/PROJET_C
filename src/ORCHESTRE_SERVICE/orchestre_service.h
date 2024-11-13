@@ -5,6 +5,7 @@
 // - le tube anonyme pour que l'orchestre envoie des données au service
 // - le sémaphore pour que  le service indique à l'orchestre la fin
 //   d'un traitement
-#define FCIHIER_SO "ORCHESTRE_SERVICE/orchestre_service.c"
+#define FICHIER_SO "ORCHESTRE_SERVICE/orchestre_service.c"
+#define ID_SO 4
 
 #endif
