@@ -196,7 +196,11 @@ int main(int argc, char * argv[])
     //     afficher un message erreur
     if(code_ret == -2)
     {
-        printf("Service indisponible pour le moment.\n");
+        printf("Service en cours d'utilisation.\n");
+    }
+    else if(code_ret == -3)
+    {
+        printf("Service non ouvert.\n");
     }
     // sinon si demande d'arrêt (i.e. numService == -1)
     //     afficher un message
@@ -205,7 +209,7 @@ int main(int argc, char * argv[])
         printf("Arrêt en cours.\n");
     }
     // sinon
-    //     récupération du code d'acceptation (= celui contenu dans code_ret) puis du mot de passe et des noms des 2 tubes
+    //     récupération du code d'acceptation?? (= celui contenu dans code_ret) puis du mot de passe et des noms des 2 tubes
     else
     {
         password = read_int(fd_otc);
@@ -251,7 +255,7 @@ int main(int argc, char * argv[])
         //                    . client_somme
         //                 ou . client_compression
         //                 ou . client_sigma
-        //         envoi d'un accusé de réception au service
+        //         envoi d'un accusé de réception au service <- à faire
         else
         {
             if(numService == SERVICE_SOMME)
