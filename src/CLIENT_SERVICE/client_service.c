@@ -1,5 +1,3 @@
-#include <sys/sem.h>
-#include <sys/ipc.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -67,4 +65,3 @@ void close_pipes_CS(int fd_STC, int fd_CTS)
     ret = close(fd_CTS);
     myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
 }
-

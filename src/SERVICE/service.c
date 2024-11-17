@@ -32,7 +32,7 @@ static void usage(const char *exeName, const char *message)
 }
 
 //Fonction permettant de récupérer le sémaphore créé par l'orchestre
-static int my_semget(int key)
+static int my_semget(key_t key)
 {
     int semId;
 
@@ -93,7 +93,7 @@ int main(int argc, char * argv[])
     int fd = io_strToInt(argv[3]);
 
     //Clé du sémaphore
-    int key = io_strToInt(argv[2]);
+    key_t key = io_strToInt(argv[2]);
 
     //Noms des 2 tubes nommés
     const char * pipe_name_stc = argv[4];

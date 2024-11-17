@@ -1,6 +1,7 @@
 #ifndef ORCHESTRE_SERVICE_H
 #define ORCHESTRE_SERVICE_H
 
+#include <sys/sem.h>
 #include <sys/types.h>
 
 // Ici toutes les communications entre l'orchestre et les services :

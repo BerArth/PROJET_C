@@ -5,6 +5,9 @@
         "myassert.h": "c",
         "orchestre_service.h": "c",
         "service_sigma.h": "c",
-        "service.h": "c"
+        "service.h": "c",
+        "types.h": "c",
+        "stat.h": "c",
+        "wait.h": "c"
     }
 }

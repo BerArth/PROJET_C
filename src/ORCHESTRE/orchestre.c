@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 
 
@@ -30,7 +29,7 @@ static void usage(const char *exeName, const char *message)
 }
 
 //Fonction dupliquant le programme avec un fork et remplace le code du fils par celui du service avec un exec
-static void my_fork_exec(const int numService, const int semKey, const int fd_ano, char* pipe_stc, char* pipe_cts)
+static void my_fork_exec(const int numService, const key_t semKey, const int fd_ano, char* pipe_stc, char* pipe_cts)
 {
 
     pid_t pid;
@@ -186,7 +185,7 @@ int main(int argc, char * argv[])
     // - un sémaphore pour que le service prévienne l'orchestre de la
     //   fin d'un traitement
     create_sem_SO(&semIdSOC, &key_soc, &semIdCOC, &key_coc, &semIdSIC, &key_sic);    
-
+    
     // - création de deux tubes nommés (pour chaque service) pour les
     //   communications entre les clients et les services
     create_pipes_CS();

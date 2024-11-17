@@ -11,7 +11,8 @@ includeDirectories="-I. \
                     -I../CONFIG \
                     -I../SERVICE \
                     -I../CLIENT_ORCHESTRE \
-                    -I../ORCHESTRE_SERVICE"
+                    -I../ORCHESTRE_SERVICE \
+                    -I../CLIENT_SERVICE"
 
 #------------
 # options classiques de compilation
@@ -30,7 +31,8 @@ commun="../UTILS/myassert.c \
         ../UTILS/io.c \
         ../CONFIG/config.c \
         ../CLIENT_ORCHESTRE/client_orchestre.c \
-        ../ORCHESTRE_SERVICE/orchestre_service.c"
+        ../ORCHESTRE_SERVICE/orchestre_service.c \
+        ../CLIENT_SERVICE/client_service.c"
 
 #------------
 # l'exécutable
