@@ -8,14 +8,16 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 
-#include "config.h"
-#include "client_orchestre.h"
-#include "orchestre_service.h"
-#include "../SERVICE/service.h"
-#include "io.h"
+#include "../CONFIG/config.h"
+#include "../CLIENT_ORCHESTRE/client_orchestre.h"
+#include "../ORCHESTRE_SERVICE/orchestre_service.h"
 #include "../CLIENT_SERVICE/client_service.h"
+#include "../SERVICE/service.h"
+#include "../UTILS/io.h"
 #include "../UTILS/myassert.h"
 
 static void usage(const char *exeName, const char *message)
@@ -70,7 +72,7 @@ static int create_sem(const char* filename, int id_key, key_t* key)
     *key = ftok(filename, id_key);
     myassert(*key != -1, "Erreur : Echec de la création de la clé IPC");
 
-    //Récupération du sémaphore
+    //Création du sémaphore
     semId = semget(*key, 1, IPC_CREAT | IPC_EXCL | 0641);
     myassert(semId != -1, "Erreur : Echec de la récupération du sémaphore");
 
@@ -115,6 +117,16 @@ static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
     myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
 }
 
+//Fonction permettant de fermer 2 tubes
+static void close_pipes(int fd_rd, int fd_wr)
+{
+    int ret = close(fd_rd);
+    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
+
+    ret = close(fd_wr);
+    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
+}
+
 //Fonction permettant de lire un entier dans un tube
 //Retourne l'entier lue
 static int read_int(int fd)
@@ -148,9 +160,26 @@ int generate_number()
 
 //Fonction qui permet de voir la fin des traitements d'un service grâce au sémaphore
 //Renvoie true si le sémaphore est à 0, false sinon
-static bool is_finish(int semId)
+static bool is_service_finish(int semId)
 {
     int state = semctl(semId, 0, GETVAL);
+    myassert(state != -1, "Echec de la lecture du semaphore");
+
+    if(state == 1)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+//Fonction qui permet de voir si le client a terminé la communication avec l'orchestre
+//Renvoie true si le sémaphore est à 1, false sinon
+static bool is_client_finish(int semId)
+{
+    int state = semctl(semId, 1, GETVAL);
     myassert(state != -1, "Echec de la lecture du semaphore");
 
     if(state == 1)
@@ -172,6 +201,14 @@ static void my_op_plus(int semId)
     myassert(ret != -1, "Echec de l'operation sur le semaphor");
 }
 
+//Fonction qui attend que le sémaphore passe à 0
+static void my_op_wait_0(int semId)
+{
+    struct sembuf op = {0, 0, 0};
+    
+    int ret = semop(semId, &op, 1);
+    myassert(ret != -1, "Echec de l'operation sur le semaphor");
+}
 
 int main(int argc, char * argv[])
 {
@@ -188,8 +225,6 @@ int main(int argc, char * argv[])
     config_init(argv[1]);
 
     //Initialisation diverses
-    //Code de retour
-    int code_ret;
 
     //Files descriptors des tubes orchestre -> client et client -> orcherstre
     int fd_otc, fd_cto;
@@ -206,6 +241,7 @@ int main(int argc, char * argv[])
 
     //Mot de passe à envoyer au client et au service concerné
     int password; 
+
 
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
@@ -249,9 +285,9 @@ int main(int argc, char * argv[])
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
 
-        bool state_somme = is_finish(semIdSOC);
-        bool state_comp = is_finish(semIdCOC);
-        bool state_sigma = is_finish(semIdSIC);
+        bool state_somme = is_service_finish(semIdSOC);
+        bool state_comp = is_service_finish(semIdCOC);
+        bool state_sigma = is_service_finish(semIdSIC);
 
         // analyse de la demande du client
         // si ordre de fin
@@ -335,23 +371,34 @@ int main(int argc, char * argv[])
         // finsi
 
         // attente d'un accusé de réception du client
+        read_int(fd_cto);
+        
         // fermer les tubes vers le client
+        close_pipes(fd_cto, fd_otc);
 
         // il peut y avoir un problème si l'orchestre revient en haut de la
         // boucle avant que le client ait eu le temps de fermer les tubes
         // il faut attendre avec un sémaphore.
-        // (en attendant on fait une attente d'1 seconde, à supprimer dès
-        // que le sémaphore est en place)
         // attendre avec un sémaphore que le client ait fermé les tubes
-        sleep(1);   // à supprimer
+        fin = is_client_finish(semIdCO);
     }
 
 
     // attente de la fin des traitements en cours (via les sémaphores)
+    my_op_wait_0(semIdSOC);
+    my_op_wait_0(semIdCOC);
+    my_op_wait_0(semIdSIC);
 
     // envoi à chaque service d'un code de fin
+    write_int(fdsSOMME[1], -1);
+    write_int(fdsCOMP[1], -1);
+    write_int(fdsSIGMA[1], -1);
 
     // attente de la terminaison des processus services
+    //3 wait car 3 processus fils (correspondant aux 3 services)
+    wait(NULL);
+    wait(NULL);
+    wait(NULL);
 
     // libération des ressources
     

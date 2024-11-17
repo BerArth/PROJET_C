@@ -4,10 +4,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "client_service.h"
+#include "../UTILS/myassert.h"
+#include "../UTILS/io.h"
+#include "../CLIENT_SERVICE/client_service.h"
 #include "client_somme.h"
-#include "myassert.h"
-#include "io.h"
+
 
 
 /*----------------------------------------------*

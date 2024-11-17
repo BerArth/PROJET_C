@@ -11,13 +11,14 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "orchestre_service.h"
-#include "client_service.h"
-
-#include "service_sigma.h"
 
 #include "../UTILS/memory.h"
 #include "../UTILS/myassert.h"
+#include "../ORCHESTRE_SERVICE/orchestre_service.h"
+#include "../CLIENT_SERVICE/client_service.h"
+#include "service_sigma.h"
+
+
 
 // définition éventuelle de types pour stocker les données
 typedef struct{

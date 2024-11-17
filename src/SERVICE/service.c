@@ -8,16 +8,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
+#include "../UTILS/io.h"
+#include "../UTILS/myassert.h"
 #include "../ORCHESTRE_SERVICE/orchestre_service.h"
-#include "client_service.h"
-#include "service.h"
+#include "../CLIENT_SERVICE/client_service.h"
 #include "service_somme.h"
 #include "service_compression.h"
 #include "service_sigma.h"
-
-#include "../UTILS/io.h"
-#include "../UTILS/myassert.h"
+#include "service.h"
 
 static void usage(const char *exeName, const char *message)
 {
@@ -120,7 +118,7 @@ int main(int argc, char * argv[])
     const char * pipe_name_stc = argv[4];
     const char * pipe_name_cts = argv[5];
 
-    //Codes de retour
+    //Code de retour
     int ret_code_orchestre;
 
     //Mots de passe envoyé par l'orchestre et par le client

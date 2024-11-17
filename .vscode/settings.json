@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "client_orchestre.h": "c",
+        "client_service.h": "c",
+        "myassert.h": "c",
+        "orchestre_service.h": "c",
+        "service_sigma.h": "c",
+        "service.h": "c"
+    }
+}

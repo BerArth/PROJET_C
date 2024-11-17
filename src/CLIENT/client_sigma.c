@@ -3,10 +3,11 @@
 #include <stdbool.h>
 #include <unistd.h> 
 
-#include "client_service.h"
+#include "../UTILS/myassert.h"
+#include "../UTILS/io.h"
+#include "../CLIENT_SERVICE/client_service.h"
 #include "client_sigma.h"
-#include "myassert.h"
-#include "io.h"
+
 
 /*----------------------------------------------*
  * usage pour le client sigma

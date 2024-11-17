@@ -8,14 +8,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "io.h"
-#include "memory.h"
-#include "myassert.h"
-
-#include "service.h"
-#include "client_orchestre.h"
-#include "client_service.h"
-
+#include "../UTILS/io.h"
+#include "../UTILS/memory.h"
+#include "../UTILS/myassert.h"
+#include "../SERVICE/service.h"
+#include "../CLIENT_ORCHESTRE/client_orchestre.h"
+#include "../CLIENT_SERVICE/client_service.h"
 #include "client_arret.h"
 #include "client_somme.h"
 #include "client_sigma.h"
@@ -55,7 +53,7 @@ static void entrer_sc(int semId)
 {
     struct sembuf operationMoins = {0, -1, 0};
 
-    int ret = semop(semId, &operationMoins, 1);
+    int ret = semop(semId, &operationMoins, 1); //Bloque si le sémaphore est à 0
     myassert(ret != -1, "Erreur : Echec de l'opération pour entrer en section critique");
 }
 
@@ -232,7 +230,7 @@ int main(int argc, char * argv[])
 
 
     // si pas d'erreur et service normal
-    if(code_ret != -2 && code_ret != -1)
+    if(code_ret == 0)
     {
         //     ouverture des tubes avec le service
         open_pipes(&fd_stc, &fd_cts, pipe_stc, pipe_cts);
