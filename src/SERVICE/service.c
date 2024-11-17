@@ -33,14 +33,9 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-static int my_semget()
+static int my_semget(int key)
 {
-    key_t key;
     int semId;
-
-    //Création de la clé
-    key = ftok(FICHIER_SO, ID_SO);
-    myassert(key != -1, "Erreur : Echec de la création de la clé IPC");
 
     //Récupération du sémaphore
     semId = semget(key, 1, 0);
@@ -49,21 +44,14 @@ static int my_semget()
     return semId;
 }
 
-static void entrer_sc(int semId)
+static void my_op_moins(int semId)
 {
-    struct sembuf operationMoins = {0, -1, 0};
 
-    int ret = semop(semId, &operationMoins, 1);
-    myassert(ret != -1, "Erreur : Echec de l'opération pour entrer en section critique");
-}
+    struct sembuf op = {0, -1, 0};
 
-//Fonction permettant de sortir de la section critique
-static void sortir_sc(int semId)
-{
-    struct sembuf operationPlus = {0, 1, 0};
+    int ret = semop(semId, &op, 1);
+    myassert(ret != -1, "Echec de l'operation sur le semaphor");
 
-    int ret = semop(semId, &operationPlus, 1);
-    myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
 }
 
 static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
@@ -113,13 +101,17 @@ int main(int argc, char * argv[])
     // initialisations diverses : analyse de argv
 
     int numService = io_strToInt(argv[1]);
-    int fd = io_strToInt(argv[2]);
+    int fd = io_strToInt(argv[3]);
+    int key = io_strToInt(argv[2]);
+
+    const char * pipe_name_stc = argv[4];
+    const char * pipe_name_cts = argv[5];
 
     int ret_code_orchestre, mdp_orc, mdp_cli;
     
     int fd_stc, fd_cts;
 
-    int sem_id = my_semget();
+    int semId = my_semget(key);
 
     while (true)
     {
@@ -133,9 +125,6 @@ int main(int argc, char * argv[])
         }
         else
         {
-
-            entrer_sc(sem_id);
-
             // sinon
             //    réception du mot de passe de l'orchestre
             
@@ -143,15 +132,15 @@ int main(int argc, char * argv[])
 
             //    ouverture des deux tubes nommés avec le client
             if(numService == SERVICE_SOMME){
-                open_pipes(&fd_cts, &fd_stc, PIPE_SSOTC, PIPE_CTSSO);
+                open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
             }
             else if(numService == SERVICE_COMPRESSION)
             {
-                open_pipes(&fd_cts, &fd_stc, PIPE_SCTC, PIPE_CTSC);
+                open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
             }
             else if(numService == SERVICE_SIGMA)
             {
-                open_pipes(&fd_cts, &fd_stc, PIPE_SSITC, PIPE_CTSSI);
+                open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
             }
             //    attente du mot de passe du client
             mdp_cli = read_int(fd_cts);
@@ -189,9 +178,9 @@ int main(int argc, char * argv[])
             //    fermeture ici des deux tubes nommés avec le client
             close_pipes(fd_cts, fd_stc);
             //    modification du sémaphore pour prévenir l'orchestre de la fin
-
-            sortir_sc(sem_id);
             
+            my_op_moins(semId);
+
             // finsi
         }
     }

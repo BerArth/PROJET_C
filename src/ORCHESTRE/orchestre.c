@@ -1,15 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+
 
 #include "config.h"
 #include "client_orchestre.h"
 #include "orchestre_service.h"
-#include "service.h"
+#include "../SERVICE/service.h"
 #include "io.h"
-
+#include "../CLIENT_SERVICE/client_service.h"
+#include "../UTILS/myassert.h"
 
 static void usage(const char *exeName, const char *message)
 {
@@ -21,6 +28,7 @@ static void usage(const char *exeName, const char *message)
 
 static void my_fork_exec(const int numService, const int semKey, const int fd_ano, const char* pipe_stc, const char* pipe_cts)
 {
+
     pid_t pid;
 
     char* argv[7];
@@ -117,6 +125,30 @@ int generate_number()
     return rand() % (max - min) + min;
 }
 
+
+static bool is_finish(int semId)
+{
+    int state = semctl(semId, 0, GETVAL);
+    myassert(state != -1, "Echec de la lecture du semaphore");
+
+    if(state == 1)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+static void my_op_plus(int semId)
+{
+    struct sembuf op = {0, 1, 0};
+    
+    int ret = semop(semId, &op, 1);
+    myassert(ret != -1, "Echec de l'operation sur le semaphor");
+}
+
 int main(int argc, char * argv[])
 {
     srand(time(NULL));
@@ -137,7 +169,7 @@ int main(int argc, char * argv[])
     int fd_otc, fd_cto;
 
     int semIdCO, semIdSOC, semIdCOC, semIdSIC;
-    int key;
+    int key_c, key_soc, key_coc, key_sic;
 
     int fdsSOMME[2];
     int fdsCOMP[2];
@@ -154,16 +186,15 @@ int main(int argc, char * argv[])
     semIdCO = create_sem(FICHIER_CO, ID_CO, &key);
     
     // lancement des services, avec pour chaque service :
-    my_fork_exec(dmdc, &key)
 
     // - création d'un tube anonyme pour converser (orchestre vers service)
     create_pipes_ano(fdsSOMME, fdsCOMP, fdsSIGMA);
 
     // - un sémaphore pour que le service prévienne l'orchestre de la
     //   fin d'un traitement
-    semIdSOC = create_sem(FICHIER_SO, ID_SOMME);    
-    semIdCOC = create_sem(FICHIER_SO, ID_COMP);    
-    semIdSIC = create_sem(FICHIER_SO, ID_SIGMA);    
+    semIdSOC = create_sem(FICHIER_SO, ID_SOMME, &key_soc);    
+    semIdCOC = create_sem(FICHIER_SO, ID_COMP, &key_coc);    
+    semIdSIC = create_sem(FICHIER_SO, ID_SIGMA, &key_sic);    
 
     // - création de deux tubes nommés (pour chaque service) pour les
     //   communications entre les clients et les services //voir client_service.h pr les constantes correspondantes aux tubes
@@ -171,6 +202,11 @@ int main(int argc, char * argv[])
     create_pipes_name(PIPE_SCTC, PIPE_CTSC);
     create_pipes_name(PIPE_SSITC, PIPE_CTSSI);
 
+    //Lancement des services
+
+    my_fork_exec(SERVICE_SOMME, key_soc, fdsSOMME, PIPE_SSOTC, PIPE_CTSSO);
+    my_fork_exec(SERVICE_COMPRESSION, key_coc, fdsCOMP, PIPE_SCTC, PIPE_CTSC);
+    my_fork_exec(SERVICE_SIGMA, key_sic, fdsSIGMA, PIPE_SSITC, PIPE_CTSSI); 
 
     while (! fin)
     {
@@ -184,6 +220,9 @@ int main(int argc, char * argv[])
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
 
+        bool state_somme = is_finish(semIdSOC);
+        bool state_comp = is_finish(semIdCOC);
+        bool state_sigma = is_finish(semIdSIC);
 
         // analyse de la demande du client
         // si ordre de fin
@@ -202,9 +241,26 @@ int main(int argc, char * argv[])
         }
         // sinon si service déjà en cours de traitement
         //     envoi au client d'un code d'erreur (via le tube nommé) //-2 aussi dcp (tu peux définir autre chose tqt juste faudra que tu me dises que je change ds client.c)
-        else if(true//avec le semaphore)
+        else if(dmdc == SERVICE_SOMME)
         {
-            write_int(fd_otc, -2);
+            if(!(state_somme))
+            {
+                write_int(fd_otc, -2);
+            }
+        }
+        else if(dmdc == SERVICE_COMPRESSION)
+        {
+            if(!(state_comp))
+            {
+                write_int(fd_otc, -2);
+            }
+        }
+        else if(dmdc == SERVICE_SIGMA)
+        {
+            if(!(state_sigma))
+            {
+                write_int(fd_otc, -2);
+            }
         }
         // sinon
         //     envoi au client d'un code d'acceptation (via le tube nommé)
@@ -217,9 +273,33 @@ int main(int argc, char * argv[])
                                                                             //tube client -> service puis tube service -> client stp
         else
         {
+            //envoie du code d'acceptation au client
             write_int(fd_otc, 0);
 
-            write_int()
+            //envoie d'un code de travaille au service
+            if(dmdc == SERVICE_SOMME)
+            {
+                write_int(fdsSOMME, 0);
+                my_op_plus(semIdSOC);
+                write_int(fdsSOMME, password);
+            }
+            else if(dmdc == SERVICE_COMPRESSION)
+            {
+                write_int(SERVICE_COMPRESSION, 0);
+                my_op_plus(semIdCOC);
+                write_int(fdsCOMP, password);
+                
+            }
+            else if(dmdc == SERVICE_SIGMA)
+            {
+                write_int(fdsSIGMA, 0);
+                my_op_plus(semIdSIC);
+                write_int(fdsSIGMA, password);
+            }
+
+
+
+            //envoie du mdp pas au client
             write_int(fd_otc, password);
 
 
