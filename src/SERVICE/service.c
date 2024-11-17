@@ -54,16 +54,6 @@ static void my_op_moins(int semId)
 
 }
 
-//Fonction d'ouverture de 2 tubes nommés
-static void open_pipes(int* fd_rd, int* fd_wr, const char* pipe_rd, const char* pipe_wr)
-{
-    *fd_rd = open(pipe_rd, O_RDONLY);
-    myassert(*fd_rd != -1, "Erreur : Echec de l'ouverture du tube");
-
-    *fd_wr = open(pipe_wr, O_WRONLY);
-    myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
-}
-
 //Fonction de lecture d'un entier dans un fichier
 //Retourne l'entier lu
 static int read_int(int fd)
@@ -85,15 +75,6 @@ static void write_int(int fd, const int msg)
     myassert(ret == sizeof(int), "Erreur : Données mal écrites");
 }
 
-//Fonction de fermeture de 2 tubes
-static void close_pipes(int fd_rd, int fd_wr)
-{
-    int ret = close(fd_rd);
-    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
-
-    ret = close(fd_wr);
-    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
-}
 
 /*----------------------------------------------*
  * fonction main
@@ -150,17 +131,7 @@ int main(int argc, char * argv[])
             mdp_orc = read_int(fd);
 
             //    ouverture des deux tubes nommés avec le client
-            if(numService == SERVICE_SOMME){
-                open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
-            }
-            else if(numService == SERVICE_COMPRESSION)
-            {
-                open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
-            }
-            else if(numService == SERVICE_SIGMA)
-            {
-                open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
-            }
+            open_pipes_CS(1, pipe_name_stc, &fd_stc, pipe_name_cts, &fd_cts);
 
             //    attente du mot de passe du client
             mdp_cli = read_int(fd_cts);
@@ -198,7 +169,7 @@ int main(int argc, char * argv[])
             } //    finsi
             
             //    fermeture ici des deux tubes nommés avec le client
-            close_pipes(fd_cts, fd_stc);
+            close_pipes_CS(fd_stc, fd_cts);
             
             //    modification du sémaphore pour prévenir l'orchestre de la fin
             my_op_moins(semId);

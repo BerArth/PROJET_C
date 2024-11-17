@@ -66,26 +66,6 @@ static void sortir_sc(int semId)
     myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
 }
 
-//Fonction permettant d'ouvrir 2 tubes pour une communication bidirectionnelle
-static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
-{
-    *fd_rd = open(pipe_rd, O_RDONLY);
-    myassert(*fd_rd != -1, "Erreur : Echec de l'ouverture du tube");
-
-    *fd_wr = open(pipe_wr, O_WRONLY);
-    myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
-}
-
-//Fonction permettant de fermer 2 tubes
-static void close_pipes(int fd_rd, int fd_wr)
-{
-    int ret = close(fd_rd);
-    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
-
-    ret = close(fd_wr);
-    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
-}
-
 //Fonction permettant de lire une chaîne de caractères dans un tube
 //Retourne la chaîne de caractère lue
 static void read_str(int fd, char** res)
@@ -182,7 +162,7 @@ int main(int argc, char * argv[])
     entrer_sc(semId);
     
     // ouverture des tubes avec l'orchestre
-    open_pipes(&fd_otc, &fd_cto, PIPE_OTC, PIPE_CTO); 
+    open_pipes_CO(0, &fd_cto, &fd_otc); 
 
     // envoi à l'orchestre du numéro du service
     write_int(fd_cto, numService);
@@ -222,7 +202,7 @@ int main(int argc, char * argv[])
     write_int(fd_cto, 0);
 
     // fermeture des tubes avec l'orchestre
-    close_pipes(fd_otc, fd_cto);
+    close_pipes_CO(fd_cto, fd_otc);
 
     // on prévient l'orchestre qu'on a fini la communication (cf. orchestre.c)
     // sortie de la section critique
@@ -233,7 +213,7 @@ int main(int argc, char * argv[])
     if(code_ret == 0)
     {
         //     ouverture des tubes avec le service
-        open_pipes(&fd_stc, &fd_cts, pipe_stc, pipe_cts);
+        open_pipes_CS(0, pipe_stc, &fd_stc, pipe_cts, &fd_cts);
 
         //     envoi du mot de passe au service
         write_int(fd_cts, password);
@@ -272,7 +252,7 @@ int main(int argc, char * argv[])
         //     finsi
 
         //     fermeture des tubes avec le service
-        close_pipes(fd_stc, fd_cts);
+        close_pipes_CS(fd_stc, fd_cts);
         
     }
     //finsi

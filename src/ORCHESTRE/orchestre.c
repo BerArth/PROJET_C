@@ -13,12 +13,13 @@
 
 
 #include "../CONFIG/config.h"
+#include "../CLIENT_SERVICE/client_service.h"
 #include "../CLIENT_ORCHESTRE/client_orchestre.h"
 #include "../ORCHESTRE_SERVICE/orchestre_service.h"
-#include "../CLIENT_SERVICE/client_service.h"
 #include "../SERVICE/service.h"
 #include "../UTILS/io.h"
 #include "../UTILS/myassert.h"
+
 
 static void usage(const char *exeName, const char *message)
 {
@@ -50,81 +51,6 @@ static void my_fork_exec(const int numService, const int semKey, const int fd_an
     {
         execv(argv[0], argv);
     }
-}
-
-//Fonction de création de 2 tubes nommés
-static void create_pipes_name(const char* filename1, const char* filename2)
-{
-    int ret = mkfifo(filename1, 0644);
-    myassert(ret == 0, "Erreur : Echec de la création du tube");
-
-    ret = mkfifo(filename2, 0644);
-    myassert(ret == 0, "Erreur : Echec de la création du tube");
-}
-
-//Fonction de création d'un sémaphore
-//Retourne l'identifiant du sémaphore et modifie la clé passée en paramètre
-static int create_sem(const char* filename, int id_key, key_t* key)
-{
-    int semId;
-
-    //Création de la clé
-    *key = ftok(filename, id_key);
-    myassert(*key != -1, "Erreur : Echec de la création de la clé IPC");
-
-    //Création du sémaphore
-    semId = semget(*key, 1, IPC_CREAT | IPC_EXCL | 0641);
-    myassert(semId != -1, "Erreur : Echec de la récupération du sémaphore");
-
-    return semId;
-}
-
-//Fonction de création de 3 tubes anonymes
-static void create_pipes_ano(int fds1[2], int fds2[2], int fds3[2])
-{
-    int ret = pipe(fds1);
-    myassert(ret == 0, "Erreur : Echec de la création du tube anonyme");
-
-    ret = pipe(fds2);
-    myassert(ret == 0, "Erreur : Echec de la création du tube anonyme");
-
-    ret = pipe(fds3);
-    myassert(ret == 0, "Erreur : Echec de la création du tube anonyme");
-}
-
-// //Fonction de fermeture des extrémités en lecture de 3 tubes anonymes
-// static void close_fd_ano(int fds1[2], int fds2[2], int fds3[2])
-// {
-//     int ret; 
-
-//     ret = close fds1[0];
-//     myassert(ret == 0, "Erreur : Echec de la fermeture de l'extrémité du tube");
-
-//     ret = close fds2[0];
-//     myassert(ret == 0, "Erreur : Echec de la fermeture de l'extrémité du tube");
-
-//     ret = close fds3[0];
-//     myassert(ret == 0, "Erreur : Echec de la fermeture de l'extrémité du tube");
-// }
-
-//Fonction permettant d'ouvrir 2 tubes pour une communication bidirectionnelle
-static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
-{
-    *fd_rd = open(pipe_rd, O_RDONLY);
-    myassert(*fd_rd != -1, "Erreur : Echec de l'ouverture du tube");
-
-    *fd_wr = open(pipe_wr, O_WRONLY);
-    myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
-}
-
-//Fonction permettant de fermer 2 tubes
-static void close_pipes(int fd_rd, int fd_wr)
-{
-    int ret = close(fd_rd);
-    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
-
-    ret = close(fd_wr);
-    myassert(ret != -1, "Erreur : Echec de la fermeture du tube");
 }
 
 //Fonction permettant de lire un entier dans un tube
@@ -210,6 +136,7 @@ static void my_op_wait_0(int semId)
     myassert(ret != -1, "Echec de l'operation sur le semaphor");
 }
 
+
 int main(int argc, char * argv[])
 {
     srand(time(NULL));
@@ -245,11 +172,11 @@ int main(int argc, char * argv[])
 
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
-    create_pipes_name(PIPE_OTC, PIPE_CTO);
+    create_pipes_CO();
 
     // - création d'un sémaphore pour que deux clients ne
     //   ne communiquent pas en même temps avec l'orchestre
-    semIdCO = create_sem(FICHIER_CO, ID_CO, &key_c);
+    semIdCO = create_sem_CO(&key_c);
     
     // lancement des services, avec pour chaque service :
 
@@ -258,15 +185,11 @@ int main(int argc, char * argv[])
 
     // - un sémaphore pour que le service prévienne l'orchestre de la
     //   fin d'un traitement
-    semIdSOC = create_sem(FICHIER_SO, ID_SOMME, &key_soc);    
-    semIdCOC = create_sem(FICHIER_SO, ID_COMP, &key_coc);    
-    semIdSIC = create_sem(FICHIER_SO, ID_SIGMA, &key_sic);    
+    create_sem_SO(&semIdSOC, &key_soc, &semIdCOC, &key_coc, &semIdSIC, &key_sic);    
 
     // - création de deux tubes nommés (pour chaque service) pour les
-    //   communications entre les clients et les services //voir client_service.h pr les constantes correspondantes aux tubes
-    create_pipes_name(PIPE_SSOTC, PIPE_CTSSO);
-    create_pipes_name(PIPE_SCTC, PIPE_CTSC);
-    create_pipes_name(PIPE_SSITC, PIPE_CTSSI);
+    //   communications entre les clients et les services
+    create_pipes_CS();
 
     //Lancement des services
     my_fork_exec(SERVICE_SOMME, key_soc, fdsSOMME[0], PIPE_SSOTC, PIPE_CTSSO);
@@ -276,7 +199,7 @@ int main(int argc, char * argv[])
     while (! fin)
     {
         // ouverture ici des tubes nommés avec un client
-        open_pipes(&fd_cto, &fd_otc, PIPE_CTO, PIPE_OTC);
+        open_pipes_CO(1, &fd_cto, &fd_otc);
 
         // attente d'une demande de service du client
         int dmdc = read_int(fd_cto);
@@ -374,7 +297,7 @@ int main(int argc, char * argv[])
         read_int(fd_cto);
         
         // fermer les tubes vers le client
-        close_pipes(fd_cto, fd_otc);
+        close_pipes_CO(fd_cto, fd_otc);
 
         // il peut y avoir un problème si l'orchestre revient en haut de la
         // boucle avant que le client ait eu le temps de fermer les tubes
@@ -400,7 +323,10 @@ int main(int argc, char * argv[])
     wait(NULL);
     wait(NULL);
 
-    // libération des ressources
-    
+    //Fermeture des tubes anonymes
+    close_pipes_ano(fdsSOMME, fdsCOMP, fdsSIGMA);
+
+    // libération des ressources 
+
     return EXIT_SUCCESS;
 }
