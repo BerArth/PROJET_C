@@ -33,6 +33,7 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
+//Fonction permettant de récupérer le sémaphore créé par l'orchestre
 static int my_semget(int key)
 {
     int semId;
@@ -44,6 +45,7 @@ static int my_semget(int key)
     return semId;
 }
 
+//Fonction diminuant le sémaphore de 1
 static void my_op_moins(int semId)
 {
 
@@ -54,7 +56,8 @@ static void my_op_moins(int semId)
 
 }
 
-static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
+//Fonction d'ouverture de 2 tubes nommés
+static void open_pipes(int* fd_rd, int* fd_wr, const char* pipe_rd, const char* pipe_wr)
 {
     *fd_rd = open(pipe_rd, O_RDONLY);
     myassert(*fd_rd != -1, "Erreur : Echec de l'ouverture du tube");
@@ -63,6 +66,8 @@ static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
     myassert(*fd_wr != -1, "Erreur : Echec de l'ouverture du tube");
 }
 
+//Fonction de lecture d'un entier dans un fichier
+//Retourne l'entier lu
 static int read_int(int fd)
 {
     int res;
@@ -74,6 +79,7 @@ static int read_int(int fd)
     return res;
 }
 
+//Fonction d'écriture d'un entier dans un fichier
 static void write_int(int fd, const int msg)
 {
     int ret = write(fd, &msg, sizeof(int));
@@ -81,6 +87,7 @@ static void write_int(int fd, const int msg)
     myassert(ret == sizeof(int), "Erreur : Données mal écrites");
 }
 
+//Fonction de fermeture de 2 tubes
 static void close_pipes(int fd_rd, int fd_wr)
 {
     int ret = close(fd_rd);
@@ -98,25 +105,39 @@ int main(int argc, char * argv[])
     if (argc != 6)
         usage(argv[0], "nombre paramètres incorrect");
 
+    
     // initialisations diverses : analyse de argv
-
+    //Numéro de service demandé 
     int numService = io_strToInt(argv[1]);
+    
+    //File descriptor du tube anonyme
     int fd = io_strToInt(argv[3]);
+
+    //Clé du sémaphore
     int key = io_strToInt(argv[2]);
 
+    //Noms des 2 tubes nommés
     const char * pipe_name_stc = argv[4];
     const char * pipe_name_cts = argv[5];
 
-    int ret_code_orchestre, mdp_orc, mdp_cli;
-    
-    int fd_stc, fd_cts;
+    //Codes de retour
+    int ret_code_orchestre;
 
+    //Mots de passe envoyé par l'orchestre et par le client
+    int mdp_orc, mdp_cli;
+    
+    //File descriptors des 2 tubes nommées service -> client et client -> service
+    int fd_stc, fd_cts; 
+
+    //Récupération de l'identifiant du sémaphore
     int semId = my_semget(key);
+
 
     while (true)
     {
         // attente d'un code de l'orchestre (via tube anonyme)
         ret_code_orchestre = read_int(fd);
+
         // si code de fin
         if(ret_code_orchestre == -1)
         {
@@ -142,8 +163,10 @@ int main(int argc, char * argv[])
             {
                 open_pipes(&fd_cts, &fd_stc, pipe_name_cts, pipe_name_stc);
             }
+
             //    attente du mot de passe du client
             mdp_cli = read_int(fd_cts);
+
             //    si mot de passe incorrect
             if(mdp_cli != mdp_orc){
             //        envoi au client d'un code d'erreur // = 1 pr l'instant (tu peux changer stv mais faudra me prévenir que je change ds client)
@@ -175,10 +198,11 @@ int main(int argc, char * argv[])
                 }
 
             } //    finsi
+            
             //    fermeture ici des deux tubes nommés avec le client
             close_pipes(fd_cts, fd_stc);
-            //    modification du sémaphore pour prévenir l'orchestre de la fin
             
+            //    modification du sémaphore pour prévenir l'orchestre de la fin
             my_op_moins(semId);
 
             // finsi

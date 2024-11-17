@@ -26,7 +26,8 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-static void my_fork_exec(const int numService, const int semKey, const int fd_ano, const char* pipe_stc, const char* pipe_cts)
+//Fonction dupliquant le programme avec un fork et remplace le code du fils par celui du service avec un exec
+static void my_fork_exec(const int numService, const int semKey, const int fd_ano, char* pipe_stc, char* pipe_cts)
 {
 
     pid_t pid;
@@ -49,6 +50,7 @@ static void my_fork_exec(const int numService, const int semKey, const int fd_an
     }
 }
 
+//Fonction de création de 2 tubes nommés
 static void create_pipes_name(const char* filename1, const char* filename2)
 {
     int ret = mkfifo(filename1, 0644);
@@ -58,9 +60,10 @@ static void create_pipes_name(const char* filename1, const char* filename2)
     myassert(ret == 0, "Erreur : Echec de la création du tube");
 }
 
+//Fonction de création d'un sémaphore
+//Retourne l'identifiant du sémaphore et modifie la clé passée en paramètre
 static int create_sem(const char* filename, int id_key, key_t* key)
 {
-    key_t* key;
     int semId;
 
     //Création de la clé
@@ -74,7 +77,8 @@ static int create_sem(const char* filename, int id_key, key_t* key)
     return semId;
 }
 
-static int create_pipes_ano(int fds1[2], int fds2[2], int fds3[2])
+//Fonction de création de 3 tubes anonymes
+static void create_pipes_ano(int fds1[2], int fds2[2], int fds3[2])
 {
     int ret = pipe(fds1);
     myassert(ret == 0, "Erreur : Echec de la création du tube anonyme");
@@ -85,6 +89,21 @@ static int create_pipes_ano(int fds1[2], int fds2[2], int fds3[2])
     ret = pipe(fds3);
     myassert(ret == 0, "Erreur : Echec de la création du tube anonyme");
 }
+
+// //Fonction de fermeture des extrémités en lecture de 3 tubes anonymes
+// static void close_fd_ano(int fds1[2], int fds2[2], int fds3[2])
+// {
+//     int ret; 
+
+//     ret = close fds1[0];
+//     myassert(ret == 0, "Erreur : Echec de la fermeture de l'extrémité du tube");
+
+//     ret = close fds2[0];
+//     myassert(ret == 0, "Erreur : Echec de la fermeture de l'extrémité du tube");
+
+//     ret = close fds3[0];
+//     myassert(ret == 0, "Erreur : Echec de la fermeture de l'extrémité du tube");
+// }
 
 //Fonction permettant d'ouvrir 2 tubes pour une communication bidirectionnelle
 static void open_pipes(int* fd_rd, int* fd_wr, char* pipe_rd, char* pipe_wr)
@@ -117,6 +136,8 @@ static void write_int(int fd, const int msg)
     myassert(ret == sizeof(int), "Erreur : Données mal écrites");
 }
 
+//Fonction générant un entier aléatoire dans un intervalle
+//Retourne l'entier généré
 int generate_number()
 {
     int min = 10;
@@ -125,7 +146,8 @@ int generate_number()
     return rand() % (max - min) + min;
 }
 
-
+//Fonction qui permet de voir la fin des traitements d'un service grâce au sémaphore
+//Renvoie true si le sémaphore est à 0, false sinon
 static bool is_finish(int semId)
 {
     int state = semctl(semId, 0, GETVAL);
@@ -141,6 +163,7 @@ static bool is_finish(int semId)
     }
 }
 
+//Fonction qui augmente le sémaphore de 1
 static void my_op_plus(int semId)
 {
     struct sembuf op = {0, 1, 0};
@@ -149,33 +172,40 @@ static void my_op_plus(int semId)
     myassert(ret != -1, "Echec de l'operation sur le semaphor");
 }
 
+
 int main(int argc, char * argv[])
 {
     srand(time(NULL));
 
-
     if (argc != 2)
+    {
         usage(argv[0], "nombre paramètres incorrect");
-    
+    }
+        
     bool fin = false;
 
     // lecture du fichier de configuration
     config_init(argv[1]);
 
-    int ret, ret_pid;
+    //Initialisation diverses
+    //Code de retour
+    int code_ret;
 
-    pid_t pid;
-
+    //Files descriptors des tubes orchestre -> client et client -> orcherstre
     int fd_otc, fd_cto;
 
+    //Identifiants des sémaphores
     int semIdCO, semIdSOC, semIdCOC, semIdSIC;
-    int key_c, key_soc, key_coc, key_sic;
+    //Clé pour création des sémaphores
+    key_t key_c, key_soc, key_coc, key_sic;
 
+    //File descriptors des tubes anynomes orchestre -> service
     int fdsSOMME[2];
     int fdsCOMP[2];
     int fdsSIGMA[2];
 
-    int password = generate_number();
+    //Mot de passe à envoyer au client et au service concerné
+    int password; 
 
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
@@ -183,7 +213,7 @@ int main(int argc, char * argv[])
 
     // - création d'un sémaphore pour que deux clients ne
     //   ne communiquent pas en même temps avec l'orchestre
-    semIdCO = create_sem(FICHIER_CO, ID_CO, &key);
+    semIdCO = create_sem(FICHIER_CO, ID_CO, &key_c);
     
     // lancement des services, avec pour chaque service :
 
@@ -203,10 +233,9 @@ int main(int argc, char * argv[])
     create_pipes_name(PIPE_SSITC, PIPE_CTSSI);
 
     //Lancement des services
-
-    my_fork_exec(SERVICE_SOMME, key_soc, fdsSOMME, PIPE_SSOTC, PIPE_CTSSO);
-    my_fork_exec(SERVICE_COMPRESSION, key_coc, fdsCOMP, PIPE_SCTC, PIPE_CTSC);
-    my_fork_exec(SERVICE_SIGMA, key_sic, fdsSIGMA, PIPE_SSITC, PIPE_CTSSI); 
+    my_fork_exec(SERVICE_SOMME, key_soc, fdsSOMME[0], PIPE_SSOTC, PIPE_CTSSO);
+    my_fork_exec(SERVICE_COMPRESSION, key_coc, fdsCOMP[0], PIPE_SCTC, PIPE_CTSC);
+    my_fork_exec(SERVICE_SIGMA, key_sic, fdsSIGMA[0], PIPE_SSITC, PIPE_CTSSI); 
 
     while (! fin)
     {
@@ -273,38 +302,35 @@ int main(int argc, char * argv[])
                                                                             //tube client -> service puis tube service -> client stp
         else
         {
-            //envoie du code d'acceptation au client
+            //envoi du code d'acceptation au client
             write_int(fd_otc, 0);
 
-            //envoie d'un code de travaille au service
+            //Génération du mot de passe
+            password = generate_number();
+
+            //envoi d'un code de travail au service
             if(dmdc == SERVICE_SOMME)
             {
-                write_int(fdsSOMME, 0);
+                write_int(fdsSOMME[1], 0);
                 my_op_plus(semIdSOC);
-                write_int(fdsSOMME, password);
+                write_int(fdsSOMME[1], password);
             }
             else if(dmdc == SERVICE_COMPRESSION)
             {
-                write_int(SERVICE_COMPRESSION, 0);
+                write_int(fdsCOMP[1], 0);
                 my_op_plus(semIdCOC);
-                write_int(fdsCOMP, password);
+                write_int(fdsCOMP[1], password);
                 
             }
             else if(dmdc == SERVICE_SIGMA)
             {
-                write_int(fdsSIGMA, 0);
+                write_int(fdsSIGMA[1], 0);
                 my_op_plus(semIdSIC);
-                write_int(fdsSIGMA, password);
+                write_int(fdsSIGMA[1], password);
             }
 
-
-
-            //envoie du mdp pas au client
+            //envoi du mdp au client
             write_int(fd_otc, password);
-
-
-
-
         }
         // finsi
 
