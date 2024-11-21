@@ -31,12 +31,13 @@ static void usage(const char *exeName, const char *message)
 //Fonction dupliquant le programme avec un fork et remplace le code du fils par celui du service avec un exec
 static void my_fork_exec(const int numService, const key_t semKey, const int fd_ano, char* pipe_stc, char* pipe_cts)
 {
-
+    printf("fork_exec\n");
+    int ret;
     pid_t pid;
 
     char* argv[7];
 
-    argv[0] = "service";
+    argv[0] = "SERVICE/service";
     argv[1] = io_intToStr(numService);
     argv[2] = io_intToStr(semKey);
     argv[3] = io_intToStr(fd_ano);
@@ -45,11 +46,14 @@ static void my_fork_exec(const int numService, const key_t semKey, const int fd_
     argv[6] = NULL;
 
     pid = fork();
+    myassert(pid != -1, "Erreur : Echec fork\n");
 
     if(pid == 0)
     {
-        execv(argv[0], argv);
+        ret = execv(argv[0], argv);
+        myassert(ret!= -1, "Erreur : Echec execv\n");
     }
+    printf("sortie fork_exec\n");
 }
 
 //Fonction permettant de lire un entier dans un tube
@@ -168,7 +172,6 @@ int main(int argc, char * argv[])
     //Mot de passe à envoyer au client et au service concerné
     int password; 
 
-
     // Pour la communication avec les clients
     // - création de 2 tubes nommés pour converser avec les clients
     create_pipes_CO();
@@ -194,6 +197,8 @@ int main(int argc, char * argv[])
     my_fork_exec(SERVICE_SOMME, key_soc, fdsSOMME[0], PIPE_SSOTC, PIPE_CTSSO);
     my_fork_exec(SERVICE_COMPRESSION, key_coc, fdsCOMP[0], PIPE_SCTC, PIPE_CTSC);
     my_fork_exec(SERVICE_SIGMA, key_sic, fdsSIGMA[0], PIPE_SSITC, PIPE_CTSSI); 
+
+    printf("services lancés\n");
 
     while (! fin)
     {
@@ -318,9 +323,12 @@ int main(int argc, char * argv[])
 
     // attente de la terminaison des processus services
     //3 wait car 3 processus fils (correspondant aux 3 services)
-    wait(NULL);
-    wait(NULL);
-    wait(NULL);
+    int ret = wait(NULL);
+    myassert(ret != -1, "Erreur : echec wait\n");
+    ret = wait(NULL);
+    myassert(ret != -1, "Erreur : echec wait\n");
+    ret = wait(NULL);
+    myassert(ret != -1, "Erreur : echec wait\n");
 
     //Fermeture des tubes anonymes
     close_pipes_ano(fdsSOMME, fdsCOMP, fdsSIGMA);
