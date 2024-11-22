@@ -66,22 +66,6 @@ static void sortir_sc(int semId)
     myassert(ret != -1, "Erreur : Echec de l'opération pour sortir de la section critique");
 }
 
-//Fonction permettant de lire une chaîne de caractères dans un tube
-//Retourne la chaîne de caractère lue
-static void read_str(int fd, char** res)
-{
-    int ret, len;
-
-    ret = read(fd, &len, sizeof(int));
-    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
-    myassert(ret == sizeof(int), "Erreur : Données mal lues");
-
-    MY_REALLOC(*res, *res, char, len);
-
-    ret = read(fd, *res, sizeof(char) * len);
-    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
-    myassert(ret == (int)(sizeof(char) * len), "Erreur : Données mal lues");
-}
 
 //Fonction permettant de lire un entier dans un tube
 //Retourne l'entier lue
@@ -95,6 +79,21 @@ static int read_int(int fd)
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
 
     return res;
+}
+
+//Fonction permettant de lire une chaîne de caractères dans un tube
+//Retourne la chaîne de caractère lue
+static void read_str(int fd, char** res)
+{
+    int ret, len;
+
+    len = read_int(fd);
+
+    MY_REALLOC(*res, *res, char, len);
+
+    ret = read(fd, *res, sizeof(char) * len);
+    myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
+    myassert(ret == (int)(sizeof(char) * len), "Erreur : Données mal lues");
 }
 
 //Fonction permettant d'écrire un entier dans un tube
@@ -191,7 +190,7 @@ int main(int argc, char * argv[])
         printf("Arrêt en cours.\n");
     }
     // sinon
-    //     récupération du code d'acceptation?? (= celui contenu dans code_ret) puis du mot de passe et des noms des 2 tubes
+    //     récupération des noms des 2 tubes et du mot de passe
     else
     {
         read_str(fd_otc, &pipe_cts);
@@ -243,7 +242,7 @@ int main(int argc, char * argv[])
         //                    . client_somme
         //                 ou . client_compression
         //                 ou . client_sigma
-        //         envoi d'un accusé de réception au service <- à faire
+        //         envoi d'un accusé de réception au service <- A FAIRE
         else
         {
             if(numService == SERVICE_SOMME)

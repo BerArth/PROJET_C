@@ -170,6 +170,9 @@ int main(int argc, char * argv[])
 
     //Initialisation diverses
 
+    //Variable contenant la demande du client
+    int dmdc = -2;
+
     //Files descriptors des tubes orchestre -> client et client -> orcherstre
     int fd_otc, fd_cto;
 
@@ -214,7 +217,6 @@ int main(int argc, char * argv[])
 
     printf("services lancés\n");
 
-    int dmdc = -2;
 
     while (dmdc != -1)
     {
@@ -240,7 +242,7 @@ int main(int argc, char * argv[])
         printf("Service sigma finit : %d\n", state_sigma);
         // analyse de la demande du client
         // si ordre de fin
-        //     envoi au client d'un code d'acceptation (via le tube nommé) //dans client.c j'ai mis -1 comme code d'acceptation
+        //     envoi au client d'un code d'acceptation (via le tube nommé)
         //     marquer le booléen de fin de la boucle
         if(dmdc == SERVICE_ARRET)
         {
@@ -249,14 +251,14 @@ int main(int argc, char * argv[])
             fin = true;
         }
         // sinon si service non ouvert
-        //     envoi au client d'un code d'erreur (via le tube nommé) //-3
+        //     envoi au client d'un code d'erreur (via le tube nommé)
         else if(!config_isServiceOpen(dmdc))
         {
             code_envoie = -3;
             write_int(fd_otc, code_envoie);
         }
         // sinon si service déjà en cours de traitement
-        //     envoi au client d'un code d'erreur (via le tube nommé) //-2 aussi dcp (tu peux définir autre chose tqt juste faudra que tu me dises que je change ds client.c)
+        //     envoi au client d'un code d'erreur (via le tube nommé)
         else if(dmdc == SERVICE_SOMME && !(state_somme))
         {
             printf("service somme finit\n");
@@ -279,9 +281,7 @@ int main(int argc, char * argv[])
         //     envoi d'un code de travail au service (via le tube anonyme)
         //     envoi du mot de passe au service (via le tube anonyme)
         //     envoi du mot de passe au client (via le tube nommé)
-        //     envoi des noms des tubes nommés au client (via le tube nommé) //voir client_service.h, je pense que dcp les noms à envoyer seraient les constantes correspondantes aux tubes
-                                                                            //dcp envoyer la taille de la chaîne de caractères avant
-                                                                            //tube client -> service puis tube service -> client stp
+        //     envoi des noms des tubes nommés au client (via le tube nommé)
         else
         {
 
@@ -293,7 +293,7 @@ int main(int argc, char * argv[])
             //Génération du mot de passe
             password = generate_number();
 
-            //envoi d'un code de travail au service
+            //envoi d'un code de travail au service et des noms des tubes nommés au client
             if(dmdc == SERVICE_SOMME)
             {
                 printf("on rentre dans service somme\n");
@@ -371,6 +371,7 @@ int main(int argc, char * argv[])
     close_pipes_ano(fdsSOMME, fdsCOMP, fdsSIGMA);
 
     // libération des ressources 
+    //Destruction des tubes
     
     return EXIT_SUCCESS;
 }

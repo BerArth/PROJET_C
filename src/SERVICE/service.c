@@ -86,6 +86,7 @@ int main(int argc, char * argv[])
 
     printf("Entre dans service main\n");
     // initialisations diverses : analyse de argv
+    
     //Numéro de service demandé 
     int numService = io_strToInt(argv[1]);
     printf("numService = %d\n", numService);
@@ -99,8 +100,6 @@ int main(int argc, char * argv[])
     //Noms des 2 tubes nommés
     const char * pipe_name_stc = argv[4];
     const char * pipe_name_cts = argv[5];
-
-   
 
     //Code de retour
     int ret_code_orchestre;
@@ -147,7 +146,7 @@ int main(int argc, char * argv[])
 
             //    si mot de passe incorrect
             if(mdp_cli != mdp_orc){
-            //        envoi au client d'un code d'erreur // = 1 pr l'instant (tu peux changer stv mais faudra me prévenir que je change ds client)
+            //        envoi au client d'un code d'erreur
                 int code_err = 1;
                 write_int(fd_stc, code_err);
                 printf("mdp incorrecte envoie de 1 ou client\n");
@@ -155,13 +154,13 @@ int main(int argc, char * argv[])
             }
             else //    sinon
             {
-                //        envoi au client d'un code d'acceptation // ce que tu veux sauf code d'erreur lol
+                //        envoi au client d'un code d'acceptation
                 //        appel de la fonction de communication avec le client :
                 //            une fct par service selon numService (cf. argv[1]) :
                 //                   . service_somme
                 //                ou . service_compression
                 //                ou . service_sigma
-                //        attente de l'accusé de réception du client
+                //        attente de l'accusé de réception du client <- A FAIRE
                 int code_acc = 0;
                 write_int(fd_stc, code_acc);
                 printf("ecrit 0 vers client\n");
