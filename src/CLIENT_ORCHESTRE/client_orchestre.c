@@ -22,6 +22,9 @@ int create_sem_CO(key_t* key)
     semId = semget(*key, 1, IPC_CREAT | IPC_EXCL | 0641);
     myassert(semId != -1, "Erreur : Echec de la récupération du sémaphore");
 
+    int ret = semctl(semId, 0, SETVAL, 1);
+    myassert(ret != -1, "Erreur : Echec de l'initialisation du sémaphore");
+
     return semId;
 }
 
