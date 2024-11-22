@@ -110,6 +110,8 @@ int main(int argc, char * argv[])
     if (argc < 2)
         usage(argv[0], "nombre paramètres incorrect");
 
+    printf("Entre dans le maine client\n");
+
     int numService = io_strToInt(argv[1]);
     if (numService < -1 || numService >= SERVICE_NB)
         usage(argv[0], "numéro service incorrect");
@@ -159,14 +161,15 @@ int main(int argc, char * argv[])
 
 
     // entrée en section critique pour communiquer avec l'orchestre
+    printf("client va entre en sc\n");
     entrer_sc(semId);
-    
+    printf("client entre en sc\n");
     // ouverture des tubes avec l'orchestre
     open_pipes_CO(0, &fd_cto, &fd_otc); 
-
+    printf("client ouvre les pipes\n");
     // envoi à l'orchestre du numéro du service
     write_int(fd_cto, numService);
-
+    printf("client ecrtit dans le pipe\n");
     // attente code de retour
     code_ret = read_int(fd_otc);
 

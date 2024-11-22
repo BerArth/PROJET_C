@@ -84,7 +84,7 @@ int main(int argc, char * argv[])
     if (argc != 6)
         usage(argv[0], "nombre paramètres incorrect");
 
-    
+    printf("Entre dans service main\n");
     // initialisations diverses : analyse de argv
     //Numéro de service demandé 
     int numService = io_strToInt(argv[1]);
@@ -114,6 +114,7 @@ int main(int argc, char * argv[])
 
     while (true)
     {
+        printf("Entre dans while main\n");
         // attente d'un code de l'orchestre (via tube anonyme)
         ret_code_orchestre = read_int(fd);
 

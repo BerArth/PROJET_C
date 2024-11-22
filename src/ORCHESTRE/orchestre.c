@@ -202,20 +202,26 @@ int main(int argc, char * argv[])
 
     while (! fin)
     {
+
+        printf("Entre dans while orchestre main\n");        
         // ouverture ici des tubes nommés avec un client
+        printf("ouvetrure pipes nomé client to orchestre vv\n");
         open_pipes_CO(1, &fd_cto, &fd_otc);
 
         // attente d'une demande de service du client
         int dmdc = read_int(fd_cto);
+        printf("deamnde : %d\n", dmdc);
 
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
 
         bool state_somme = is_service_finish(semIdSOC);
+        printf("service somme finit : %d\n", state_somme);
         bool state_comp = is_service_finish(semIdCOC);
+        printf("service comp finit : %d\n", state_comp);
         bool state_sigma = is_service_finish(semIdSIC);
-
+        printf("Service sigma finit : %d\n", state_sigma);
         // analyse de la demande du client
         // si ordre de fin
         //     envoi au client d'un code d'acceptation (via le tube nommé) //dans client.c j'ai mis -1 comme code d'acceptation
