@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/wait.h>
+#include <string.h>
 
 
 #include "../CONFIG/config.h"
@@ -77,6 +78,15 @@ static void write_int(int fd, const int msg)
     myassert(ret == sizeof(int), "Erreur : Données mal écrites");
 }
 
+static void write_str(int fd ,const char * msg)
+{
+    int len = strlen(msg);
+    write_int(fd, len);
+    int ret = write(fd, msg, sizeof(char)* len);
+    myassert(ret != -1 , "Erreur : Echec de l'écriture dans le tube");
+    myassert(ret == (int)(sizeof(char) * len), "Erreur : Données mal écrites");
+}
+
 //Fonction générant un entier aléatoire dans un intervalle
 //Retourne l'entier généré
 int generate_number()
@@ -108,10 +118,10 @@ static bool is_service_finish(int semId)
 //Renvoie true si le sémaphore est à 1, false sinon
 static bool is_client_finish(int semId)
 {
-    int state = semctl(semId, 1, GETVAL);
+    int state = semctl(semId, 0, GETVAL);
     myassert(state != -1, "Echec de la lecture du semaphore");
 
-    if(state == 1)
+    if(state == 0)
     {
         return false;
     }
@@ -150,6 +160,10 @@ int main(int argc, char * argv[])
     }
         
     bool fin = false;
+
+
+    //test
+    int code_envoie;
 
     // lecture du fichier de configuration
     config_init(argv[1]);
@@ -200,7 +214,9 @@ int main(int argc, char * argv[])
 
     printf("services lancés\n");
 
-    while (! fin)
+    int dmdc = -2;
+
+    while (dmdc != -1)
     {
 
         printf("Entre dans while orchestre main\n");        
@@ -209,7 +225,7 @@ int main(int argc, char * argv[])
         open_pipes_CO(1, &fd_cto, &fd_otc);
 
         // attente d'une demande de service du client
-        int dmdc = read_int(fd_cto);
+        dmdc = read_int(fd_cto);
         printf("deamnde : %d\n", dmdc);
 
         // détecter la fin des traitements lancés précédemment via
@@ -228,37 +244,34 @@ int main(int argc, char * argv[])
         //     marquer le booléen de fin de la boucle
         if(dmdc == SERVICE_ARRET)
         {
-            write_int(fd_otc, -1);
+            code_envoie = -1;
+            write_int(fd_otc, code_envoie);
             fin = true;
         }
         // sinon si service non ouvert
         //     envoi au client d'un code d'erreur (via le tube nommé) //-3
         else if(!config_isServiceOpen(dmdc))
         {
-            write_int(fd_otc, -3);
+            code_envoie = -3;
+            write_int(fd_otc, code_envoie);
         }
         // sinon si service déjà en cours de traitement
         //     envoi au client d'un code d'erreur (via le tube nommé) //-2 aussi dcp (tu peux définir autre chose tqt juste faudra que tu me dises que je change ds client.c)
-        else if(dmdc == SERVICE_SOMME)
+        else if(dmdc == SERVICE_SOMME && !(state_somme))
         {
-            if(!(state_somme))
-            {
-                write_int(fd_otc, -2);
-            }
+            printf("service somme finit\n");
+            code_envoie = -2;
+            write_int(fd_otc, code_envoie);
         }
-        else if(dmdc == SERVICE_COMPRESSION)
+        else if(dmdc == SERVICE_COMPRESSION && !(state_comp))
         {
-            if(!(state_comp))
-            {
-                write_int(fd_otc, -2);
-            }
+            code_envoie = -2;
+            write_int(fd_otc, code_envoie);
         }
-        else if(dmdc == SERVICE_SIGMA)
+        else if(dmdc == SERVICE_SIGMA && !(state_sigma))
         {
-            if(!(state_sigma))
-            {
-                write_int(fd_otc, -2);
-            }
+            code_envoie = -2;
+            write_int(fd_otc, code_envoie);
         }
         // sinon
         //     envoi au client d'un code d'acceptation (via le tube nommé)
@@ -271,8 +284,11 @@ int main(int argc, char * argv[])
                                                                             //tube client -> service puis tube service -> client stp
         else
         {
+
+            printf("orchestre envoie les info ou service concerné\n");
             //envoi du code d'acceptation au client
-            write_int(fd_otc, 0);
+            code_envoie = 0;
+            write_int(fd_otc, code_envoie);
 
             //Génération du mot de passe
             password = generate_number();
@@ -280,15 +296,26 @@ int main(int argc, char * argv[])
             //envoi d'un code de travail au service
             if(dmdc == SERVICE_SOMME)
             {
-                write_int(fdsSOMME[1], 0);
+                printf("on rentre dans service somme\n");
+                code_envoie = 0;
+                write_int(fdsSOMME[1], code_envoie);
+                printf("on ecrtit 0 dans s somme\n");
                 my_op_plus(semIdSOC);
+                printf("op + sur szervice \n");
                 write_int(fdsSOMME[1], password);
+                printf("ecrite password :%d\n", password);
+                write_str(fd_otc, PIPE_CTSSO);
+                write_str(fd_otc, PIPE_SSOTC);
+                
             }
             else if(dmdc == SERVICE_COMPRESSION)
             {
                 write_int(fdsCOMP[1], 0);
                 my_op_plus(semIdCOC);
                 write_int(fdsCOMP[1], password);
+                write_str(fd_otc, PIPE_CTSC);
+                write_str(fd_otc, PIPE_SCTC);
+                
                 
             }
             else if(dmdc == SERVICE_SIGMA)
@@ -296,10 +323,14 @@ int main(int argc, char * argv[])
                 write_int(fdsSIGMA[1], 0);
                 my_op_plus(semIdSIC);
                 write_int(fdsSIGMA[1], password);
+                write_str(fd_otc, PIPE_CTSSI);
+                write_str(fd_otc, PIPE_SSITC);
+                
             }
 
             //envoi du mdp au client
             write_int(fd_otc, password);
+            
         }
         // finsi
 
@@ -340,6 +371,6 @@ int main(int argc, char * argv[])
     close_pipes_ano(fdsSOMME, fdsCOMP, fdsSIGMA);
 
     // libération des ressources 
-
+    
     return EXIT_SUCCESS;
 }

@@ -80,7 +80,7 @@ static void read_str(int fd, char** res)
 
     ret = read(fd, *res, sizeof(char) * len);
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
-    myassert(ret == (int)(sizeof(int) * len), "Erreur : Données mal lues");
+    myassert(ret == (int)(sizeof(char) * len), "Erreur : Données mal lues");
 }
 
 //Fonction permettant de lire un entier dans un tube
@@ -90,6 +90,7 @@ static int read_int(int fd)
     int res;
 
     int ret = read(fd, &res, sizeof(int));
+    printf("read_int client res = %d (ret = %d)\n", res, ret);
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
 
@@ -193,29 +194,35 @@ int main(int argc, char * argv[])
     //     récupération du code d'acceptation?? (= celui contenu dans code_ret) puis du mot de passe et des noms des 2 tubes
     else
     {
-        password = read_int(fd_otc);
-
         read_str(fd_otc, &pipe_cts);
+        printf("pipe cts = %s\n", pipe_cts);
         read_str(fd_otc, &pipe_stc);
+        printf("pipe stc = %s\n", pipe_stc);
+        password = read_int(fd_otc);
+        printf("%d password\n", password);
+        
     }
     // finsi
     
 
     // envoi d'un accusé de réception à l'orchestre
+    printf("on tente d'envoyer accusé  ce recep\n");
     write_int(fd_cto, 0);
-
+    printf("on a envoyé l'accuse\n");
     // fermeture des tubes avec l'orchestre
+    printf("on ferme le pipe co\n");
     close_pipes_CO(fd_cto, fd_otc);
-
+    printf("on a fermé le pipe\n");
     // on prévient l'orchestre qu'on a fini la communication (cf. orchestre.c)
     // sortie de la section critique
     sortir_sc(semId);
-
+    printf("ejufbnzof,ze\n");
 
     // si pas d'erreur et service normal
     if(code_ret == 0)
     {
         //     ouverture des tubes avec le service
+        printf("on tente d'open les pipes\n");
         open_pipes_CS(0, pipe_stc, &fd_stc, pipe_cts, &fd_cts);
 
         //     envoi du mot de passe au service
@@ -223,7 +230,7 @@ int main(int argc, char * argv[])
 
         //     attente de l'accusé de réception du service
         code_ret = read_int(fd_stc);
-
+        printf("read_int client code ret = %d\n", code_ret);
         //     si mot de passe non accepté
         //         message d'erreur
         if(code_ret == 1)

@@ -58,7 +58,7 @@ static void sendResult(int ptc, const float result)
 void service_somme(int ptc, int pfc)
 {
     // initialisations diverses
-
+    printf("Je suis service somme\n");
     float a,b,result;
 
     receiveData(pfc, &a, &b);
@@ -66,9 +66,6 @@ void service_somme(int ptc, int pfc)
     sendResult(ptc ,result);
 
     // libération éventuelle de ressources
-    int ret = close(pfc);
-    myassert(ret == 0, "Erreur : Echec de la fermture du tube pipe_from_client");
-    ret = close(ptc);
-    myassert(ret == 0, "Erreur : Echec de la fermture du tube pipe_to_client");
+
 
 }
