@@ -33,25 +33,22 @@ typedef struct{
  *----------------------------------------------*/
 
 // fonction de réception des données
-static void receiveData(int pfc, int * nb_thread, int * size, float ** tab)
+static void receiveData(int pfc, int * nb_thread, int * size, float* tab)
 {
     int ret = read(pfc, nb_thread, sizeof(int));
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
-    printf("nb_thread : %d\n", *nb_thread);
 
     ret = read(pfc, size, sizeof(int));
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
-    printf("size : %d\n", *size);
 
-    MY_MALLOC(*tab, float, *size);
+    MY_REALLOC(tab, tab, float, *size);
 
-    for(int i = 0; i < *size; i++){
-        ret = read(pfc, tab[i], sizeof(float));
+    for(int i = 0; i <*size; i++){
+        ret = read(pfc, &(tab[i]), sizeof(float));
         myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
         myassert(ret == sizeof(float), "Erreur : Données mal lues");
-        printf("%f", *tab[i]);
     }
 
 }
@@ -131,12 +128,13 @@ static void sendResult(int ptc, float result)
 void service_sigma(int ptc, int pfc)
 {
     // initialisations diversesœ
-    
+
     int nb_thread, size;
     float * tab;
+    MY_MALLOC(tab, float, 1);
     float result = 0.0;
 
-    receiveData(pfc, &nb_thread, &size, &tab);
+    receiveData(pfc, &nb_thread, &size, tab);
     computeResult(size, nb_thread, tab, &result);
     sendResult(ptc, result);
 

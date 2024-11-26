@@ -74,7 +74,6 @@ static int read_int(int fd)
     int res;
 
     int ret = read(fd, &res, sizeof(int));
-    printf("read_int client res = %d (ret = %d)\n", res, ret);
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
 
@@ -109,8 +108,6 @@ int main(int argc, char * argv[])
 {
     if (argc < 2)
         usage(argv[0], "nombre paramètres incorrect");
-
-    printf("Entre dans le maine client\n");
 
     int numService = io_strToInt(argv[1]);
     if (numService < -1 || numService >= SERVICE_NB)
@@ -161,15 +158,15 @@ int main(int argc, char * argv[])
 
 
     // entrée en section critique pour communiquer avec l'orchestre
-    printf("client va entre en sc\n");
+
     entrer_sc(semId);
-    printf("client entre en sc\n");
+
     // ouverture des tubes avec l'orchestre
     open_pipes_CO(0, &fd_cto, &fd_otc); 
-    printf("client ouvre les pipes\n");
+
     // envoi à l'orchestre du numéro du service
     write_int(fd_cto, numService);
-    printf("client ecrtit dans le pipe\n");
+
     // attente code de retour
     code_ret = read_int(fd_otc);
 
@@ -194,34 +191,33 @@ int main(int argc, char * argv[])
     else
     {
         read_str(fd_otc, &pipe_cts);
-        printf("pipe cts = %s\n", pipe_cts);
+
         read_str(fd_otc, &pipe_stc);
-        printf("pipe stc = %s\n", pipe_stc);
+
         password = read_int(fd_otc);
-        printf("%d password\n", password);
+
         
     }
     // finsi
     
 
     // envoi d'un accusé de réception à l'orchestre
-    printf("on tente d'envoyer accusé  ce recep\n");
+
     write_int(fd_cto, 0);
-    printf("on a envoyé l'accuse\n");
+
     // fermeture des tubes avec l'orchestre
-    printf("on ferme le pipe co\n");
+
     close_pipes_CO(fd_cto, fd_otc);
-    printf("on a fermé le pipe\n");
+
     // on prévient l'orchestre qu'on a fini la communication (cf. orchestre.c)
     // sortie de la section critique
     sortir_sc(semId);
-    printf("ejufbnzof,ze\n");
+
 
     // si pas d'erreur et service normal
     if(code_ret == 0)
     {
         //     ouverture des tubes avec le service
-        printf("on tente d'open les pipes\n");
         open_pipes_CS(0, pipe_stc, &fd_stc, pipe_cts, &fd_cts);
 
         //     envoi du mot de passe au service
@@ -229,7 +225,6 @@ int main(int argc, char * argv[])
 
         //     attente de l'accusé de réception du service
         code_ret = read_int(fd_stc);
-        printf("read_int client code ret = %d\n", code_ret);
         //     si mot de passe non accepté
         //         message d'erreur
         if(code_ret == 1)
@@ -257,10 +252,14 @@ int main(int argc, char * argv[])
             {
                 client_sigma(fd_cts, fd_stc, argc, argv);
             }   
+
+            write_int(fd_cts, 0);
+
         }
         //     finsi
 
         //     fermeture des tubes avec le service
+
         close_pipes_CS(fd_stc, fd_cts);
         
     }

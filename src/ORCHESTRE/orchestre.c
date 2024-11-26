@@ -32,7 +32,6 @@ static void usage(const char *exeName, const char *message)
 //Fonction dupliquant le programme avec un fork et remplace le code du fils par celui du service avec un exec
 static void my_fork_exec(const int numService, const key_t semKey, const int fd_ano, char* pipe_stc, char* pipe_cts)
 {
-    printf("fork_exec\n");
     int ret;
     pid_t pid;
 
@@ -54,7 +53,6 @@ static void my_fork_exec(const int numService, const key_t semKey, const int fd_
         ret = execv(argv[0], argv);
         myassert(ret!= -1, "Erreur : Echec execv\n");
     }
-    printf("sortie fork_exec\n");
 }
 
 //Fonction permettant de lire un entier dans un tube
@@ -243,33 +241,27 @@ int main(int argc, char * argv[])
     my_fork_exec(SERVICE_SOMME, key_soc, fdsSOMME[0], PIPE_SSOTC, PIPE_CTSSO);
     my_fork_exec(SERVICE_COMPRESSION, key_coc, fdsCOMP[0], PIPE_SCTC, PIPE_CTSC);
     my_fork_exec(SERVICE_SIGMA, key_sic, fdsSIGMA[0], PIPE_SSITC, PIPE_CTSSI); 
-
-    printf("services lancés\n");
-
     
 
     while (!fin)
     {
+     
+        printf("En attente d'un client...\n");
 
-        printf("Entre dans while orchestre main\n");        
         // ouverture ici des tubes nommés avec un client
-        printf("ouvetrure pipes nomé client to orchestre vv\n");
         open_pipes_CO(1, &fd_cto, &fd_otc);
 
         // attente d'une demande de service du client
         dmdc = read_int(fd_cto);
-        printf("deamnde : %d\n", dmdc);
 
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
 
         bool state_somme = is_service_finish(semIdSOC);
-        printf("service somme finit : %d\n", state_somme);
         bool state_comp = is_service_finish(semIdCOC);
-        printf("service comp finit : %d\n", state_comp);
         bool state_sigma = is_service_finish(semIdSIC);
-        printf("Service sigma finit : %d\n", state_sigma);
+
         // analyse de la demande du client
         // si ordre de fin
         //     envoi au client d'un code d'acceptation (via le tube nommé)
@@ -291,7 +283,6 @@ int main(int argc, char * argv[])
         //     envoi au client d'un code d'erreur (via le tube nommé)
         else if(dmdc == SERVICE_SOMME && !(state_somme))
         {
-            printf("service somme finit\n");
             code_envoie = -2;
             write_int(fd_otc, code_envoie);
         }
@@ -315,7 +306,6 @@ int main(int argc, char * argv[])
         else
         {
 
-            printf("orchestre envoie les info ou service concerné\n");
             //envoi du code d'acceptation au client
             code_envoie = 0;
             write_int(fd_otc, code_envoie);
@@ -326,14 +316,10 @@ int main(int argc, char * argv[])
             //envoi d'un code de travail au service et des noms des tubes nommés au client
             if(dmdc == SERVICE_SOMME)
             {
-                printf("on rentre dans service somme\n");
                 code_envoie = 0;
                 write_int(fdsSOMME[1], code_envoie);
-                printf("on ecrtit 0 dans s somme\n");
                 my_op_plus(semIdSOC);
-                printf("op + sur szervice \n");
                 write_int(fdsSOMME[1], password);
-                printf("ecrite password :%d\n", password);
                 write_str(fd_otc, PIPE_CTSSO);
                 write_str(fd_otc, PIPE_SSOTC);
                 
@@ -379,10 +365,8 @@ int main(int argc, char * argv[])
         {
             client_finish = is_client_finish(semIdCO);
         }
-        
 
     }
-
 
     // attente de la fin des traitements en cours (via les sémaphores)
     my_op_wait_0(semIdSOC);

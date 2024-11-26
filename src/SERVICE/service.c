@@ -84,12 +84,10 @@ int main(int argc, char * argv[])
     if (argc != 6)
         usage(argv[0], "nombre paramètres incorrect");
 
-    printf("Entre dans service main\n");
     // initialisations diverses : analyse de argv
     
     //Numéro de service demandé 
     int numService = io_strToInt(argv[1]);
-    printf("numService = %d\n", numService);
     
     //File descriptor du tube anonyme
     int fd = io_strToInt(argv[3]);
@@ -106,7 +104,8 @@ int main(int argc, char * argv[])
 
     //Mots de passe envoyé par l'orchestre et par le client
     int mdp_orc, mdp_cli;
-    
+    //accusé de reception du client
+    int acc;
     //File descriptors des 2 tubes nommées service -> client et client -> service
     int fd_stc, fd_cts; 
 
@@ -116,10 +115,8 @@ int main(int argc, char * argv[])
 
     while (true)
     {
-        printf("Entre dans while main\n");
         // attente d'un code de l'orchestre (via tube anonyme)
         ret_code_orchestre = read_int(fd);
-        printf("ret_code_orchest = %d\n", ret_code_orchestre);
         // si code de fin
         if(ret_code_orchestre == -1)
         {
@@ -132,24 +129,18 @@ int main(int argc, char * argv[])
             //    réception du mot de passe de l'orchestre
             
             mdp_orc = read_int(fd);
-            printf("mdp_orchestre_service (sans service) : %d\n", mdp_orc);
 
             //    ouverture des deux tubes nommés avec le client
-            printf("pipe stc = %s\n", pipe_name_stc);
-            printf("pipe cts = %s\n", pipe_name_cts);
             open_pipes_CS(1, pipe_name_stc, &fd_stc, pipe_name_cts, &fd_cts);
-            printf("ouverture des pipes cs (dans service)\n");
 
             //    attente du mot de passe du client
             mdp_cli = read_int(fd_cts);
-            printf("mdp du client = %d (dans service)\n", mdp_cli);
 
             //    si mot de passe incorrect
             if(mdp_cli != mdp_orc){
             //        envoi au client d'un code d'erreur
                 int code_err = 1;
                 write_int(fd_stc, code_err);
-                printf("mdp incorrecte envoie de 1 ou client\n");
 
             }
             else //    sinon
@@ -163,11 +154,8 @@ int main(int argc, char * argv[])
                 //        attente de l'accusé de réception du client <- A FAIRE
                 int code_acc = 0;
                 write_int(fd_stc, code_acc);
-                printf("ecrit 0 vers client\n");
                 if(numService == SERVICE_SOMME){
-                    printf("on lance service somme\n");
                     service_somme(fd_stc, fd_cts);
-                    printf("service somme, est lancé\n");
                 }
                 else if(numService == SERVICE_COMPRESSION)
                 {
@@ -177,13 +165,15 @@ int main(int argc, char * argv[])
                 {
                     service_sigma(fd_stc, fd_cts);
                 }
+                
+                acc = read_int(fd_cts);
+                acc += 1;
 
             } //    finsi
             
             //    fermeture ici des deux tubes nommés avec le client
-            printf("service va fermé les pipes");
             close_pipes_CS(fd_stc, fd_cts);
-            printf("service a fermé les pipes");
+
             //    modification du sémaphore pour prévenir l'orchestre de la fin
             
             my_op_moins(semId);

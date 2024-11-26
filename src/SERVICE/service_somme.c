@@ -58,7 +58,6 @@ static void sendResult(int ptc, const float result)
 void service_somme(int ptc, int pfc)
 {
     // initialisations diverses
-    printf("Je suis service somme\n");
     float a,b,result;
 
     receiveData(pfc, &a, &b);
