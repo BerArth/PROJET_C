@@ -115,7 +115,7 @@ void client_sigma(int pts, int pfs, int argc, char * argv[])
     float to_sum[tab_size];
     for(int i = 0; i < tab_size; i++)
     {
-        to_sum[i] = io_strToInt(argv[i + 3]);
+        to_sum[i] =io_strToFloat(argv[i + 3]);
     }
 
     sendData(pts, io_strToInt(argv[2]), to_sum, tab_size);

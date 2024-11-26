@@ -88,7 +88,7 @@ static void sendResult(int ptc, int len, const char * result)
 /*----------------------------------------------*
  * fonction appelable par le main
  *----------------------------------------------*/
-void service_compression(int pfc, int ptc)
+void service_compression(int ptc, int pfc)
 {
     // initialisations diverses
     char * s = NULL;

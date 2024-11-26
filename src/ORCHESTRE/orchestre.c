@@ -149,6 +149,35 @@ static void my_op_wait_0(int semId)
     myassert(ret != -1, "Echec de l'operation sur le semaphor");
 }
 
+static void my_unlink(){
+    int ret = unlink(PIPE_SSOTC);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_CTSSO);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_SCTC);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_CTSC);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_SSITC);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_CTSSI);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_OTC);
+    myassert(ret != -1, "Echec de la supression du tube");
+    ret = unlink(PIPE_CTO);
+    myassert(ret != -1, "Echec de la supression du tube");
+}
+
+static void my_sem_dl(int semIdCO, int semIdSOC, int semIdCOC, int semIdSIC){
+    int ret = semctl(semIdCO, -1, IPC_RMID);
+    myassert(ret != -1 , "Echec de la destruction du semaphore");
+    ret = semctl(semIdSOC, -1, IPC_RMID);
+    myassert(ret != -1 , "Echec de la destruction du semaphore");
+    ret = semctl(semIdCOC, -1, IPC_RMID);
+    myassert(ret != -1 , "Echec de la destruction du semaphore");
+    ret = semctl(semIdSIC, -1, IPC_RMID);
+    myassert(ret != -1 , "Echec de la destruction du semaphore");
+}
 
 int main(int argc, char * argv[])
 {
@@ -160,7 +189,7 @@ int main(int argc, char * argv[])
     }
         
     bool fin = false;
-
+    bool client_finish = false;
 
     //test
     int code_envoie;
@@ -217,8 +246,9 @@ int main(int argc, char * argv[])
 
     printf("services lancés\n");
 
+    
 
-    while (dmdc != -1)
+    while (!fin)
     {
 
         printf("Entre dans while orchestre main\n");        
@@ -344,7 +374,13 @@ int main(int argc, char * argv[])
         // boucle avant que le client ait eu le temps de fermer les tubes
         // il faut attendre avec un sémaphore.
         // attendre avec un sémaphore que le client ait fermé les tubes
-        fin = is_client_finish(semIdCO);
+        
+        while (!client_finish)
+        {
+            client_finish = is_client_finish(semIdCO);
+        }
+        
+
     }
 
 
@@ -372,6 +408,8 @@ int main(int argc, char * argv[])
 
     // libération des ressources 
     //Destruction des tubes
+    my_sem_dl(semIdCO, semIdSOC, semIdCOC, semIdSIC);
+    my_unlink();
     
     return EXIT_SUCCESS;
 }

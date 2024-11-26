@@ -38,10 +38,12 @@ static void receiveData(int pfc, int * nb_thread, int * size, float ** tab)
     int ret = read(pfc, nb_thread, sizeof(int));
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
+    printf("nb_thread : %d\n", *nb_thread);
 
     ret = read(pfc, size, sizeof(int));
     myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
     myassert(ret == sizeof(int), "Erreur : Données mal lues");
+    printf("size : %d\n", *size);
 
     MY_MALLOC(*tab, float, *size);
 
@@ -49,6 +51,7 @@ static void receiveData(int pfc, int * nb_thread, int * size, float ** tab)
         ret = read(pfc, tab[i], sizeof(float));
         myassert(ret != -1, "Erreur : Echec de la lecture dans le tube");
         myassert(ret == sizeof(float), "Erreur : Données mal lues");
+        printf("%f", *tab[i]);
     }
 
 }
