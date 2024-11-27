@@ -9,6 +9,7 @@
         "types.h": "c",
         "stat.h": "c",
         "wait.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "io.h": "c"
     }
 }

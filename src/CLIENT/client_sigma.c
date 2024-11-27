@@ -37,6 +37,10 @@ void client_sigma_verifArgs(int argc, char * argv[])
     if (argc < 4)
         usage(argv[0], argv[1], "nombre d'arguments");
     // éventuellement d'autres tests
+    else if(io_strToInt(argv[2]) <= 0)
+    {
+        usage(argv[0], argv[1], "Nombre de threads invalide");
+    }
 }
 
 

@@ -38,6 +38,10 @@ void client_compression_verifArgs(int argc, char * argv[])
     if (argc != 3)
         usage(argv[0], argv[1], "nombre d'arguments");
     // éventuellement d'autres tests
+    else if(strlen(argv[2]) == 0)
+    {
+        usage(argv[0], argv[1], "la chaîne à compresser est vide");
+    } 
 }
 
 
