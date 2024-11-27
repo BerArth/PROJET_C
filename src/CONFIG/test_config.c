@@ -24,6 +24,7 @@ void test_config(const char *filename)
     int nb;
 
     // un appel ici à config_getNbServices, .., config_exit doit planter
+    config_getNbServices();
     config_init(filename);
     // ici, un autre appel à config_init doit planter
     nb = config_getNbServices();
@@ -37,6 +38,7 @@ void test_config(const char *filename)
     }
     config_exit();
     // ici, un appel à config_getNbServices, ..., config_exit doit planter
+    config_getNbServices();
 }
 
 int main(int argc, char * argv[])

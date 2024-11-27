@@ -1,3 +1,11 @@
+/*****************************************************************************
+ * auteurs : Arthur Bertrand-Bernard, Leïla Cooper
+ *
+ * fichier : orchestre.c
+ *
+ * note :
+ *****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -147,6 +155,7 @@ static void my_op_wait_0(int semId)
     myassert(ret != -1, "Echec de l'operation sur le semaphor");
 }
 
+//Fonction de suppression de tous les tubes nommés
 static void my_unlink(){
     int ret = unlink(PIPE_SSOTC);
     myassert(ret != -1, "Echec de la supression du tube");
@@ -166,6 +175,7 @@ static void my_unlink(){
     myassert(ret != -1, "Echec de la supression du tube");
 }
 
+//Fonction de destruction de tous les sémaphores
 static void my_sem_dl(int semIdCO, int semIdSOC, int semIdCOC, int semIdSIC){
     int ret = semctl(semIdCO, -1, IPC_RMID);
     myassert(ret != -1 , "Echec de la destruction du semaphore");
@@ -391,6 +401,9 @@ int main(int argc, char * argv[])
     close_pipes_ano(fdsSOMME, fdsCOMP, fdsSIGMA);
 
     // libération des ressources 
+    //Finalisation de la configuration
+    config_exit();
+
     //Destruction des tubes
     my_sem_dl(semIdCO, semIdSOC, semIdCOC, semIdSIC);
     my_unlink();

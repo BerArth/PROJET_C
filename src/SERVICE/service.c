@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * auteurs : Arthur Bertrand-Bernard, Leïla Cooper
+ *
+ * fichier : service.c
+ *
+ * note :
+ *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>

@@ -1,3 +1,11 @@
+/*****************************************************************************
+ * auteurs : Arthur Bertrand-Bernard, Leïla Cooper
+ *
+ * fichier : client.c
+ *
+ * note :
+ *****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>

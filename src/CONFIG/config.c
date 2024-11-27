@@ -35,14 +35,13 @@ static bool is_init = false;
 static bool is_exit = false;
 static bool *services_open = NULL;
 static int nb_services = 0;
-char name_tmp[100] = {0};
 
 void config_init(const char *filename)
 {
     // TODO erreur si la fonction est appelée deux fois
 
-    myassert(!is_init, "Config_init a deja ete appele");
-    myassert(!is_exit, "Config_exit a deja ete appele");
+    myassert(!is_init, "Config_init a déjà été appelé");
+    myassert(!is_exit, "Config_exit a déjà été appelé");
 
     // TODO code vide par défaut, à remplacer
     //      il faut lire le fichier et stocker toutes les informations en
@@ -50,6 +49,8 @@ void config_init(const char *filename)
 
     FILE * fd = fopen(filename, "r");
     myassert(fd != NULL, "Erreur lors de l'ouverture du fichier config");
+    
+    char name_tmp[100] = {0};
 
     char line[100];
     int nb_line = 0;
@@ -119,7 +120,7 @@ int config_getNbServices()
     // erreur si la fonction est appelée après config_exit
 
     myassert(is_init, "Config_init n'a pas encore été appelé");
-    myassert(!is_exit, "Config_exit a deja ete appele");
+    myassert(!is_exit, "Config_exit a déjà été appelé");
 
     // code par défaut, à remplacer
     return nb_services;
@@ -131,7 +132,7 @@ const char * config_getExeName()
     // TODO erreur si la fonction est appelée après config_exit
 
     myassert(is_init, "Config_init n'a pas encore été appelé");
-    myassert(!is_exit, "Config_exit a deja ete appele");
+    myassert(!is_exit, "Config_exit a déjà été appelé");
 
     // TODO code par défaut, à remplacer
     return name;
@@ -144,8 +145,8 @@ bool config_isServiceOpen(int pos)
     // TODO erreur si "pos" est incorrect
 
     myassert(is_init, "Config_init n'a pas encore été appelé");
-    myassert(!is_exit, "Config_exit a deja ete appele");
-    myassert(pos >= 0 && pos <= nb_services, "La position rechercher n'est pas correcte");
+    myassert(!is_exit, "Config_exit a déjà été appelé");
+    myassert(pos >= 0 && pos <= nb_services, "La position recherchée n'est pas correcte");
 
     // TODO code par défaut, à remplacer
     return services_open[pos];
