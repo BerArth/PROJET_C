@@ -63,8 +63,8 @@ static void my_fork_exec(const int numService, const key_t semKey, const int fd_
     }
 }
 
-//Fonction permettant de lire un entier dans un tube
-//Retourne l'entier lue
+//Fonction permettant de lire un entier dans un fichier
+//Retourne l'entier lu
 static int read_int(int fd)
 {
     int res;
@@ -76,7 +76,7 @@ static int read_int(int fd)
     return res;
 }
 
-//Fonction permettant d'écrire un entier dans un tube
+//Fonction permettant d'écrire un entier dans un fichier
 static void write_int(int fd, const int msg)
 {
     int ret = write(fd, &msg, sizeof(int));
@@ -84,6 +84,7 @@ static void write_int(int fd, const int msg)
     myassert(ret == sizeof(int), "Erreur : Données mal écrites");
 }
 
+//Fonction permettant d'écrire une chaîne de caractère dans un fichier
 static void write_str(int fd ,const char * msg)
 {
     int len = strlen(msg);
@@ -196,16 +197,17 @@ int main(int argc, char * argv[])
         usage(argv[0], "nombre paramètres incorrect");
     }
         
-    bool fin = false;
-    bool client_finish = false;
-
-    //test
-    int code_envoie;
 
     // lecture du fichier de configuration
     config_init(argv[1]);
 
     //Initialisation diverses
+    //Variable de tests de fin
+    bool fin = false;
+    bool client_finish = false;
+
+    //Variable contenant le code à envoyer
+    int code_envoi;
 
     //Variable contenant la demande du client
     int dmdc = -2;
@@ -267,7 +269,6 @@ int main(int argc, char * argv[])
         // détecter la fin des traitements lancés précédemment via
         // les sémaphores dédiés (attention on n'attend pas la
         // fin des traitement, on note juste ceux qui sont finis)
-
         bool state_somme = is_service_finish(semIdSOC);
         bool state_comp = is_service_finish(semIdCOC);
         bool state_sigma = is_service_finish(semIdSIC);
@@ -278,33 +279,33 @@ int main(int argc, char * argv[])
         //     marquer le booléen de fin de la boucle
         if(dmdc == SERVICE_ARRET)
         {
-            code_envoie = -1;
-            write_int(fd_otc, code_envoie);
+            code_envoi = -1;
+            write_int(fd_otc, code_envoi);
             fin = true;
         }
         // sinon si service non ouvert
         //     envoi au client d'un code d'erreur (via le tube nommé)
         else if(!config_isServiceOpen(dmdc))
         {
-            code_envoie = -3;
-            write_int(fd_otc, code_envoie);
+            code_envoi = -3;
+            write_int(fd_otc, code_envoi);
         }
         // sinon si service déjà en cours de traitement
         //     envoi au client d'un code d'erreur (via le tube nommé)
         else if(dmdc == SERVICE_SOMME && !(state_somme))
         {
-            code_envoie = -2;
-            write_int(fd_otc, code_envoie);
+            code_envoi = -2;
+            write_int(fd_otc, code_envoi);
         }
         else if(dmdc == SERVICE_COMPRESSION && !(state_comp))
         {
-            code_envoie = -2;
-            write_int(fd_otc, code_envoie);
+            code_envoi = -2;
+            write_int(fd_otc, code_envoi);
         }
         else if(dmdc == SERVICE_SIGMA && !(state_sigma))
         {
-            code_envoie = -2;
-            write_int(fd_otc, code_envoie);
+            code_envoi = -2;
+            write_int(fd_otc, code_envoi);
         }
         // sinon
         //     envoi au client d'un code d'acceptation (via le tube nommé)
@@ -317,8 +318,8 @@ int main(int argc, char * argv[])
         {
 
             //envoi du code d'acceptation au client
-            code_envoie = 0;
-            write_int(fd_otc, code_envoie);
+            code_envoi = 0;
+            write_int(fd_otc, code_envoi);
 
             //Génération du mot de passe
             password = generate_number();
@@ -326,8 +327,8 @@ int main(int argc, char * argv[])
             //envoi d'un code de travail au service et des noms des tubes nommés au client
             if(dmdc == SERVICE_SOMME)
             {
-                code_envoie = 0;
-                write_int(fdsSOMME[1], code_envoie);
+                code_envoi = 0;
+                write_int(fdsSOMME[1], code_envoi);
                 my_op_plus(semIdSOC);
                 write_int(fdsSOMME[1], password);
                 write_str(fd_otc, PIPE_CTSSO);

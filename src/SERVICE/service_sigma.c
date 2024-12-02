@@ -127,7 +127,7 @@ static void sendResult(int ptc, float result)
  *----------------------------------------------*/
 void service_sigma(int ptc, int pfc)
 {
-    // initialisations diversesœ
+    // initialisations diverses
 
     int nb_thread, size;
     float * tab;

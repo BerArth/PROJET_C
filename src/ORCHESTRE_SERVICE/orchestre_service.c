@@ -75,6 +75,10 @@ void close_pipes_ano(int fds_SSO[2], int fds_SC[2], int fds_SSI[2])
 {
     //Service somme
     close_pipe_ano(fds_SSO);
+
+    //Service compression
     close_pipe_ano(fds_SC);
+
+    //Service sigma
     close_pipe_ano(fds_SSI);
 }

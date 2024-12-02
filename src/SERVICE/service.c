@@ -91,8 +91,9 @@ int main(int argc, char * argv[])
     if (argc != 6)
         usage(argv[0], "nombre paramètres incorrect");
 
-    // initialisations diverses : analyse de argv
+    // initialisations diverses
     
+    //Analyse de argv
     //Numéro de service demandé 
     int numService = io_strToInt(argv[1]);
     
@@ -134,7 +135,6 @@ int main(int argc, char * argv[])
         {
             // sinon
             //    réception du mot de passe de l'orchestre
-            
             mdp_orc = read_int(fd);
 
             //    ouverture des deux tubes nommés avec le client
@@ -182,7 +182,6 @@ int main(int argc, char * argv[])
             close_pipes_CS(fd_stc, fd_cts);
 
             //    modification du sémaphore pour prévenir l'orchestre de la fin
-            
             my_op_moins(semId);
 
             // finsi

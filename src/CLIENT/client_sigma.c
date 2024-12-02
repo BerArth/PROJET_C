@@ -84,7 +84,7 @@ static void sendData(const int pts, const int num_thr, const float to_sum[], con
 // Les paramètres sont
 // - le file descriptor du tube de communication en provenance du service
 // - autre chose si nécessaire
-static void receiveResult(int pfs/* autres paramètres si nécessaire */)
+static void receiveResult(int pfs)
 {
     // récupération du résultat
     float res; 
@@ -95,7 +95,7 @@ static void receiveResult(int pfs/* autres paramètres si nécessaire */)
     myassert(ret == sizeof(float), "Erreur : Données mal lues");
 
     // affichage du résultat
-    printf("Le résultat est : %f\n", res);
+    printf("Le résultat est : %g\n", res);
 }
 
 
@@ -113,7 +113,7 @@ void client_sigma(int pts, int pfs, int argc, char * argv[])
     myassert(argc >= 5, "Nombre de paramètres invalide");
 
     // variables locales éventuelles
-    int tab_size = argc - 3; //car trois premières cases de argv sont d'autres arguments
+    int tab_size = argc - 3; //les trois premières cases de argv ne sont pas des flottants à additionner
 
     //Création du tableau de float
     float to_sum[tab_size];

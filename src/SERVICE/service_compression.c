@@ -13,8 +13,6 @@
 #include "../CLIENT_SERVICE/client_service.h"
 #include "service_compression.h"
 
-// définition éventuelle de types pour stocker les données
-
 
 /*----------------------------------------------*
  * fonctions appelables par le service
@@ -23,7 +21,6 @@
 // fonction de réception des données
 static void receiveData(int pfc, int * len, char ** s)
 {
-    //de Leïla : la longueur de la chaîne de caractère est envoyée en premier (c'est toujours le cas)
     int ret = read(pfc, len, sizeof(int));
     myassert(ret != -1 ,"Erreur : Echec de la lecture dans le tube.");
     myassert(ret == sizeof(int) ,"Erreur : Données mal lues");
@@ -101,6 +98,5 @@ void service_compression(int ptc, int pfc)
     sendResult(ptc, len_result, result);
 
     // libération éventuelle de ressources
-
     free(result);
 }

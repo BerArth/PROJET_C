@@ -166,7 +166,6 @@ int main(int argc, char * argv[])
 
 
     // entrée en section critique pour communiquer avec l'orchestre
-
     entrer_sc(semId);
 
     // ouverture des tubes avec l'orchestre

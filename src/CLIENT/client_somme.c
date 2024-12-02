@@ -71,7 +71,7 @@ static void sendData(int pts, const float fst, const float scd)
 // - le file descriptor du tube de communication en provenance du service
 // - le prefixe
 // - autre chose si nécessaire
-static void receiveResult(int pfs, const char* prefixe /* autres paramètres si nécessaire */)
+static void receiveResult(int pfs, const char* prefixe)
 {
     // récupération de la somme
     float res;
@@ -82,7 +82,7 @@ static void receiveResult(int pfs, const char* prefixe /* autres paramètres si 
     myassert(ret == sizeof(float), "Erreur : Données mal lues");
 
     // affichage du préfixe et du résultat
-    printf("%s %f\n", prefixe, res);
+    printf("%s %g\n", prefixe, res);
 }
 
 
@@ -99,8 +99,6 @@ void client_somme(int pts, int pfs, int argc, char * argv[])
 {
     //Pour ne pas avoir de warning sur l'inutilisation de argc
     myassert(argc == 5, "Nombre de paramètres invalide");
-
-    // variables locales éventuelles
 
     sendData(pts, io_strToFloat(argv[2]), io_strToFloat(argv[3]));
     receiveResult(pfs, argv[4]);

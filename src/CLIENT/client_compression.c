@@ -77,7 +77,7 @@ static void sendData(int pts, const char* message)
 // Les paramètres sont
 // - le file descriptor du tube de communication en provenance du service
 // - autre chose si nécessaire
-static void receiveResult(int pfs /* autres paramètres si nécessaire */)
+static void receiveResult(int pfs)
 {
     //récupération de la longueur de la chaîne compressée
     int len = 0;
@@ -114,7 +114,6 @@ void client_compression(int pts, int pfs, int argc, char * argv[])
     //Pour ne pas avoir de warning sur l'inutilisation de argc
     myassert(argc == 3, "Nombre de paramètres invalide");
 
-    // variables locales éventuelles
 
     sendData(pts, argv[2]);
     receiveResult(pfs);
